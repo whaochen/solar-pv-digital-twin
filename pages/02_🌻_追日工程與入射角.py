@@ -5,13 +5,38 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="第 2 章：大氣層與光線的捕捉", page_icon="🌻", layout="wide")
 
+# 緊湊化版面與高亮度數據卡 CSS（確保亮色/暗色主題下數字都極致明亮清晰，且上下同框）
+st.markdown("""
+<style>
+    .block-container { padding-top: 1.2rem !important; padding-bottom: 1rem !important; }
+    .bright-card {
+        background: linear-gradient(145deg, #0F172A, #1E293B);
+        border: 1px solid #475569;
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: #F8FAFC !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-bottom: 8px;
+    }
+    .bright-title {
+        color: #E2E8F0 !important;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .bright-val-blue { color: #60A5FA !important; font-size: 1.65rem; font-weight: 800; line-height: 1.2; }
+    .bright-val-green { color: #00E676 !important; font-size: 1.65rem; font-weight: 800; line-height: 1.2; }
+    .bright-val-gold { color: #FFD700 !important; font-size: 1.65rem; font-weight: 800; line-height: 1.2; }
+    .bright-sub { color: #94A3B8 !important; font-size: 0.82rem; margin-top: 2px; }
+</style>
+""", unsafe_allow_html=True)
+
 # ==================== 頂部：故事引導 ====================
-st.title("第二章：【穿越】大氣層與光線的捕捉（太陽光 ➔ 面板幾何）")
+st.markdown("### 第二章：【穿越】大氣層與光線的捕捉（太陽光 ➔ 面板幾何）")
 st.info(
     "🌟 **【故事引導】** 光子穿過厚重的大氣層後，分成了兩支隊伍：一支依然筆直前進，稱為**「直射光（DNI）」**；"
-    "另一支被雲氣與空氣分子撞散，從四面八方溫柔落下，稱為**「散射光（DHI）」**。\n\n"
-    "這時，地面上的太陽能板正等著接住它們——究竟是要**站在原地傻傻地等（固定式）**，"
-    "還是要**像向日葵一樣轉頭迎接，把早晚斜射的陽光「扳正」（追日系統）**？讓我們進入 3D 競技場一探究竟！"
+    "另一支被雲氣與空氣分子撞散，從四面八方溫柔落下，稱為**「散射光（DHI）」**。"
+    "地面上的太陽能板究竟是要**站在原地傻傻地等（固定式）**，還是**像向日葵一樣轉頭迎接，把早晚斜射的陽光「扳正」（追日系統）**？"
 )
 
 # ==================== 核心物理與 3D 幾何計算函數 ====================
@@ -100,7 +125,7 @@ def make_panel_mesh_vertices(center_x, center_y, center_z, nx, ny, nz, w=0.22, h
 
 
 def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi_base, camera_mode):
-    """建構無閃爍 WebGL 3D 追日同場競技舞台"""
+    """建構無閃爍 WebGL 3D 追日同場競技舞台 (播放鍵與暫停鍵置於上方)"""
     sx_arr, sy_arr, sz_arr, delta_deg = calc_sun_vector(day_n, np.array([hour_t]), phi_deg)
     sx, sy, sz = float(sx_arr.flat[0]), float(sy_arr.flat[0]), float(sz_arr.flat[0])
     is_day = sz > 0.02
@@ -132,12 +157,12 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
         mode='text',
         text=[
             '<b>🌅 東方 (E)</b>', '<b>🌇 西方 (W)</b>', '<b>⬆️ 北方 (N)</b>', '<b>⬇️ 南方 (S)</b>',
-            '<b>🟦 ① 固定式面板<br>(朝南固定傾角)</b>',
-            '<b>🟩 ② 單軸追日系統<br>(東西向轉頭)</b>',
-            '<b>🟧 ③ 雙軸追日向日葵<br>(全天候垂直鎖定)</b>'
+            '<b>🟦 ① 固定式<br>(朝南固定傾角)</b>',
+            '<b>🟩 ② 單軸追日<br>(東西向轉頭)</b>',
+            '<b>🟧 ③ 雙軸追日<br>(全天候垂直鎖定)</b>'
         ],
         textfont=dict(
-            size=[13, 13, 12, 12, 12, 12, 12],
+            size=[12, 12, 11, 11, 11, 11, 11],
             color=['#FFD700', '#FF8C00', '#00E5FF', '#FF6B6B', '#60A5FA', '#34D399', '#FBBF24']
         ),
         showlegend=False
@@ -150,7 +175,7 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
     fig.add_trace(go.Scatter3d(
         x=tsx[m_day] * 1.15, y=tsy[m_day] * 0.75, z=tsz[m_day] * 0.85 + 0.15,
         mode='lines', line=dict(color='rgba(255, 215, 0, 0.45)', width=5, dash='dot'),
-        name='太陽今日空中軌跡'
+        name='太陽今日軌跡'
     ))
 
     # [Trace 3] 三座太陽能板的立柱支架
@@ -200,7 +225,7 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
         mode='lines+markers',
         line=dict(color='#00FFCC', width=6),
         marker=dict(size=4, color='#00FFCC'),
-        name='面板法向量 n (正對方向)'
+        name='面板法向量 n'
     ))
 
     # [動態 Trace E] 太陽球體與打向三塊面板的金色直射光束
@@ -279,10 +304,10 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
             layout=go.Layout(
                 title=dict(
                     text=(
-                        f"<b>🕒 {h_str} 幾何受光率 cos(θi) 對決 ｜ "
-                        f"🟦固定式: {c_fix_val:.0f}% vs 🟩單軸追日: {c_1ax_val:.0f}% vs 🟧雙軸追日: {c_2ax_val:.0f}%</b>"
+                        f"<b>🕒 {h_str} 受光率 cos(θi) ｜ "
+                        f"🟦固定: {c_fix_val:.0f}% vs 🟩單軸: {c_1ax_val:.0f}% vs 🟧雙軸: {c_2ax_val:.0f}%</b>"
                     ),
-                    font=dict(size=16, color="#FFD700")
+                    font=dict(size=15, color="#FFD700")
                 )
             )
         ))
@@ -295,16 +320,16 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
 
     fig.frames = frames
 
-    # 設定攝影機視角
+    # 設定攝影機視角 (拉近並置中三座面板)
     if "光子第一人稱視角" in camera_mode:
-        cam_eye = dict(x=sx * 1.65, y=sy * 1.65 - 0.2, z=max(0.35, sz * 1.65))
-        cam_center = dict(x=0.0, y=0.0, z=0.15)
+        cam_eye = dict(x=sx * 1.55, y=sy * 1.55 - 0.15, z=max(0.32, sz * 1.55))
+        cam_center = dict(x=0.0, y=0.0, z=0.14)
     elif "由北向南全景視角" in camera_mode:
-        cam_eye = dict(x=0.0, y=1.85, z=0.65)
-        cam_center = dict(x=0.0, y=-0.1, z=0.2)
+        cam_eye = dict(x=0.0, y=1.65, z=0.52)
+        cam_center = dict(x=0.0, y=-0.05, z=0.18)
     else:
-        cam_eye = dict(x=0.15, y=-1.85, z=0.75)
-        cam_center = dict(x=0.0, y=0.0, z=0.2)
+        cam_eye = dict(x=0.12, y=-1.65, z=0.62)
+        cam_center = dict(x=0.0, y=0.0, z=0.16)
 
     c0 = float(fix_res[3].flat[0]) * 100.0
     c1 = float(ax1_res[3].flat[0]) * 100.0
@@ -312,29 +337,30 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
     fig.update_layout(
         title=dict(
             text=(
-                f"<b>🕒 {int(hour_t):02d}:{int((hour_t%1)*60):02d} 幾何受光率 cos(θi) 對決 ｜ "
-                f"🟦固定式: {c0:.0f}% vs 🟩單軸追日: {c1:.0f}% vs 🟧雙軸追日: {c2:.0f}%</b>"
+                f"<b>🕒 {int(hour_t):02d}:{int((hour_t%1)*60):02d} 受光率 cos(θi) ｜ "
+                f"🟦固定: {c0:.0f}% vs 🟩單軸: {c1:.0f}% vs 🟧雙軸: {c2:.0f}%</b>"
             ),
-            font=dict(size=16, color="#FFD700"),
+            font=dict(size=15, color="#FFD700"),
             x=0.02, y=0.96
         ),
-        height=640,
-        margin=dict(l=0, r=0, b=80, t=45),
+        height=440,
+        margin=dict(l=0, r=0, b=55, t=40),
         paper_bgcolor='#0E1117',
         scene=dict(
-            xaxis=dict(visible=False, range=[-1.4, 1.4]),
-            yaxis=dict(visible=False, range=[-1.0, 1.0]),
-            zaxis=dict(visible=False, range=[0.0, 1.2]),
+            xaxis=dict(visible=False, range=[-1.38, 1.38]),
+            yaxis=dict(visible=False, range=[-0.95, 0.95]),
+            zaxis=dict(visible=False, range=[0.0, 1.12]),
             aspectmode='manual',
-            aspectratio=dict(x=1.35, y=0.9, z=0.65),
+            aspectratio=dict(x=1.35, y=0.9, z=0.62),
             camera=dict(eye=cam_eye, center=cam_center),
             bgcolor='#0E1117'
         ),
-        legend=dict(yanchor="top", y=0.92, xanchor="left", x=0.02, font=dict(color="white", size=11), bgcolor="rgba(0,0,0,0.5)"),
+        legend=dict(orientation="h", yanchor="top", y=0.90, xanchor="left", x=0.02, font=dict(color="white", size=11), bgcolor="rgba(15,23,42,0.75)"),
+        # 【關鍵對齊】將「▶️ 播放一日追日對決」與「⏸️ 暫停」按鈕移至右上角 (x=0.98, y=0.98)！
         updatemenus=[dict(
             type="buttons", showactive=False,
-            x=0.02, y=0.02, xanchor="left", yanchor="bottom", direction="left",
-            pad=dict(r=10, t=10), bgcolor="#1E293B", font=dict(color="#FFFFFF", size=13),
+            x=0.98, y=0.98, xanchor="right", yanchor="top", direction="left",
+            pad=dict(r=5, t=0), bgcolor="#2563EB", font=dict(color="#FFFFFF", size=13),
             buttons=[
                 dict(
                     label="▶️ 播放一日追日對決",
@@ -351,9 +377,9 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
         sliders=[dict(
             active=int(np.clip((hour_t - 6.0) / 0.25, 0, len(slider_steps) - 1)),
             yanchor="bottom", xanchor="left",
-            currentvalue=dict(font=dict(size=14, color="#FFD700"), prefix="拖曳時間軸：", visible=True, xanchor="right"),
+            currentvalue=dict(font=dict(size=12, color="#FFD700"), prefix="動畫時間軸：", visible=True, xanchor="right"),
             transition=dict(duration=0),
-            pad=dict(b=10, t=10), len=0.70, x=0.28, y=0.02,
+            pad=dict(b=2, t=2), len=0.94, x=0.03, y=-0.05,
             font=dict(color="#CBD5E1", size=10),
             steps=slider_steps
         )]
@@ -361,13 +387,11 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
 
     return fig, fix_res, ax1_res, ax2_res, cur_dni, cur_dhi
 
-# ==================== 主舞台配置：左拉桿控制台 (1) + 右 3D 追日競技場 (2.3) ====================
-col_ctrl, col_stage = st.columns([1.05, 2.25], gap="large")
+# ==================== 上半部主舞台：左拉桿控制台 (1.05) + 右 3D 追日競技場 (2.25) ====================
+col_ctrl, col_stage = st.columns([1.05, 2.25], gap="medium")
 
 with col_ctrl:
-    st.markdown("### 🎛️ 追日工程控制台")
-
-    st.markdown("#### 🎥 1. 切換 3D 觀察視角（含學習導讀）")
+    st.markdown("##### 🎥 1. 切換 3D 觀察視角（含學習導讀）")
     camera_mode = st.radio(
         "選擇教學鏡頭：",
         [
@@ -375,58 +399,58 @@ with col_ctrl:
             "☀️ 光子第一人稱視角 (直擊餘弦投影面積差異！)",
             "🌅 由北向南全景視角 (左東升 ➔ 右西落)"
         ],
-        index=0
+        index=0,
+        label_visibility="collapsed"
     )
 
-    # 動態顯示該視角的「學習體驗與最佳切換時機」導讀卡
     if "正面鳥瞰" in camera_mode:
-        st.info(
-            "💡 **【視角導讀：競技場正面鳥瞰】**\n\n"
-            "* **👀 你會看到什麼**：站在三座面板正南方向北俯瞰，同時比較 **🟦固定式（左）**、**🟩單軸（中）** 與 **🟧雙軸（右）** 的面板姿態與青綠色法向量箭頭（$\\vec{n}$）。\n"
-            "* **🎯 最佳操作時機**：點擊右圖左下角 **「▶️ 播放一日追日對決」** 時必選！能清楚觀察單軸與雙軸如何跟著太陽轉頭，把斜射陽光「扳正」。"
+        st.caption(
+            "💡 **視角導讀**：同時比較 **🟦固定式（左）**、**🟩單軸（中）** 與 **🟧雙軸（右）** 的面板姿態。"
+            "點擊右圖右上角 **▶️ 播放一日追日對決** 最能觀察單軸與雙軸如何跟著太陽轉頭！"
         )
     elif "光子第一人稱視角" in camera_mode:
-        st.info(
-            "🔥 **【本章靈魂視角：直擊餘弦損失 $\\cos\\theta_i$】**\n\n"
-            "* **👀 你會看到什麼**：鏡頭直接架在太陽（光子）身上往下看三塊板子！\n"
-            "* **🎯 最佳操作時機**：**強烈建議將下方定格時間拉到「早上 07:30」再切換此視角！**\n"
-            "  * 你會看到 **🟦固定式（左）** 因為沒轉頭，在光子眼中變成**窄窄斜斜的一條線（有效面積只剩 30%，大量光子漏接！）**。\n"
-            "  * 而 **🟧雙軸追日（右）** 正對著你，呈現**最飽滿的正方形（有效面積 100%）**——讓你一眼秒懂什麼叫「餘弦損失」！"
+        st.caption(
+            "🔥 **本章靈魂視角**：鏡頭架在太陽往下看三塊板子！**請將下方定格時間拉到「07:30」**："
+            "你會看到🟦固定式變成窄窄一條線（面積剩 30%），而🟧雙軸呈現最飽滿正方形（面積 100%）！"
         )
     else:
-        st.info(
-            "💡 **【視角導讀：由北向南全景視角】**\n\n"
-            "* **👀 你會看到什麼**：左邊是東方日出、右邊是西方日落，從面板背面觀察單軸追日系統（中間綠板）如何像蹺蹺板一樣「早上往東傾、下午往西傾」。\n"
-            "* **🎯 最佳操作時機**：講解水平單軸追日器（HSAT）機械轉軸動作原理時最適合。"
+        st.caption(
+            "💡 **視角導讀**：左邊東方日出、右邊西方日落，從面板背面觀察單軸追日系統如何像蹺蹺板一樣「早往東傾、晚往西傾」。"
         )
 
-    st.markdown("#### 🌤️ 2. 大氣層與季節設定")
-    weather_preset = st.selectbox(
-        "大氣層雲霧狀態（影響直射 DNI 與散射 DHI）：",
-        [
-            "☀️ 晴朗無雲 (高直射光 DNI=850, 散射 DHI=120)",
-            "⛅ 薄雲微霾 (中直射光 DNI=550, 散射 DHI=260)",
-            "☁️ 陰天厚雲 (無直射光 DNI=80, 全散射 DHI=350)"
-        ],
-        index=0
-    )
+    st.markdown("##### 🌤️ 2. 大氣層雲霧與季節設定")
+    c_w1, c_w2 = st.columns([1.2, 1.0])
+    with c_w1:
+        weather_preset = st.selectbox(
+            "大氣雲霧狀態 (DNI / DHI)",
+            [
+                "☀️ 晴朗無雲 (高直射 DNI)",
+                "⛅ 薄雲微霾 (中直射 DNI)",
+                "☁️ 陰天厚雲 (全散射 DHI)"
+            ],
+            index=0
+        )
     weather_map = {
-        "☀️ 晴朗無雲 (高直射光 DNI=850, 散射 DHI=120)": (850.0, 120.0),
-        "⛅ 薄雲微霾 (中直射光 DNI=550, 散射 DHI=260)": (550.0, 260.0),
-        "☁️ 陰天厚雲 (無直射光 DNI=80, 全散射 DHI=350)": (80.0, 350.0)
+        "☀️ 晴朗無雲 (高直射 DNI)": (850.0, 120.0),
+        "⛅ 薄雲微霾 (中直射 DNI)": (550.0, 260.0),
+        "☁️ 陰天厚雲 (全散射 DHI)": (80.0, 350.0)
     }
     dni_peak, dhi_base = weather_map[weather_preset]
 
-    season_opt = st.selectbox(
-        "選擇季節：",
-        ["☀️ 夏至 (6/21, 太陽偏北高空)", "🌸 春分/秋分 (太陽正東升西落)", "❄️ 冬至 (12/21, 太陽偏南低空)"],
-        index=0
-    )
-    day_n = {"☀️ 夏至 (6/21, 太陽偏北高空)": 172, "🌸 春分/秋分 (太陽正東升西落)": 80, "❄️ 冬至 (12/21, 太陽偏南低空)": 355}[season_opt]
+    with c_w2:
+        season_opt = st.selectbox(
+            "選擇季節",
+            ["☀️ 夏至 (6/21)", "🌸 春/秋分", "❄️ 冬至 (12/21)"],
+            index=0
+        )
+    day_n = {"☀️ 夏至 (6/21)": 172, "🌸 春/秋分": 80, "❄️ 冬至 (12/21)": 355}[season_opt]
 
-    st.markdown("#### 🔧 3. 面板工程參數與定格時間")
-    fixed_tilt_deg = st.slider("🟦 固定式面板朝南傾角 β (°)", 0.0, 45.0, 20.0, step=2.5, help="台灣最佳年發電固定傾角約為 20°~23.5°")
-    hour_t = st.slider("⏰ 定格觀察時刻 (推薦拉到 07:30 搭配光子視角！)", 6.0, 18.0, 7.5, step=0.25)
+    st.markdown("##### 🔧 3. 面板傾角與定格時刻 (連動下方公式)")
+    c_p1, c_p2 = st.columns(2)
+    with c_p1:
+        fixed_tilt_deg = st.slider("🟦 固定傾角 β (°)", 0.0, 45.0, 20.0, step=2.5)
+    with c_p2:
+        hour_t = st.slider("⏰ 定格時刻 t (hr)", 6.0, 18.0, 7.5, step=0.25)
     phi_deg = 23.15
 
 with col_stage:
@@ -434,49 +458,91 @@ with col_stage:
         day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi_base, camera_mode
     )
     st.plotly_chart(fig_arena, use_container_width=True, key="tracker_arena_3d")
-    st.caption("🎬 **動畫播放指南**：點擊黑底圖表左下角的 **「▶️ 播放一日追日對決」** 即可觀看三座面板同步追日動畫！")
 
-# ==================== 全日同場競技曲線：把早晚陽光「扳正」的胖鐘型發電曲線 ====================
-st.markdown("---")
-st.markdown("### 📈 同場競技模擬：全日面板接收輻照度曲線（見證早晚陽光被「扳正」的奇蹟！）")
-
+# ==================== 下半部：高亮度即時數據 ＋ 物理公式白話導讀（正下方一體化連動） ====================
 t_day = np.linspace(5.5, 18.5, 131)
 sx_d, sy_d, sz_d, _ = calc_sun_vector(day_n, t_day, phi_deg)
 am_d = np.where(sz_d > 0.02, np.power(np.clip(sz_d, 0.02, 1.0), 0.35), 0.0)
 dni_d = dni_peak * am_d
 dhi_d = np.where(sz_d > 0.02, dhi_base * (0.4 + 0.6 * np.maximum(0.0, sz_d)), 0.0)
-
 fix_d, ax1_d, ax2_d = calc_tracker_normals_and_poa(sx_d, sy_d, sz_d, fixed_tilt_deg, dni_d, dhi_d)
 
 dt_hr = float(t_day[1] - t_day[0])
 energy_fix = float(np.sum(fix_d[4]) * dt_hr / 1000.0)
 energy_1ax = float(np.sum(ax1_d[4]) * dt_hr / 1000.0)
 energy_2ax = float(np.sum(ax2_d[4]) * dt_hr / 1000.0)
-
 gain_1ax = ((energy_1ax - energy_fix) / max(energy_fix, 1e-4)) * 100.0
 gain_2ax = ((energy_2ax - energy_fix) / max(energy_fix, 1e-4)) * 100.0
 
-col_curve, col_kpi = st.columns([1.8, 1.0], gap="large")
+cos_fix_now = float(fix_res[3].flat[0]) * 100.0
+cos_1ax_now = float(ax1_res[3].flat[0]) * 100.0
+cos_2ax_now = float(ax2_res[3].flat[0]) * 100.0
+poa_fix_now = float(fix_res[4].flat[0])
+poa_1ax_now = float(ax1_res[4].flat[0])
+poa_2ax_now = float(ax2_res[4].flat[0])
+theta_fix_deg = float(np.degrees(np.arccos(np.clip(cos_fix_now / 100.0, 0.0, 1.0))))
 
-with col_curve:
+f1, f2, f3 = st.columns(3, gap="medium")
+
+with f1:
+    st.markdown(f"""
+    <div class="bright-card">
+        <div class="bright-title">🟦 ① 固定式系統 (傾角 {fixed_tilt_deg:.0f}°) —— 餘弦損失基準</div>
+        <div class="bright-val-blue">受光率 {cos_fix_now:.1f}% <span style="font-size:1rem;color:#F8FAFC;font-weight:500;">｜ 夾角 θi = {theta_fix_deg:.1f}°</span></div>
+        <div class="bright-sub">當前輻照度：{poa_fix_now:.0f} W/m² ｜ 今日累積：{energy_fix:.2f} kWh/m²</div>
+    </div>
+    """, unsafe_allow_html=True)
+    with st.container(border=True):
+        st.caption("**【① 什麼是餘弦損失 Cosine Loss？】** 光線斜射時被攤平在更大面積上，受光率為太陽光 $\\vec{S}$ 與面板法向量 $\\vec{n}$ 夾角餘弦值：")
+        st.latex(r"\eta_{\text{cosine}} = \cos\theta_i = \vec{S} \cdot \vec{n}")
+        st.latex(rf"\theta_i = \color{{orange}}{{{theta_fix_deg:.1f}^\circ}} \implies \cos\theta_i = \color{{deepskyblue}}{{{cos_fix_now:.1f}\%}}")
+
+with f2:
+    st.markdown(f"""
+    <div class="bright-card">
+        <div class="bright-title">🟩 ② 單軸追日系統 (東西向轉頭) —— 大氣直射+散射</div>
+        <div class="bright-val-green">{poa_1ax_now:.0f} W/m² <span style="font-size:1rem;color:#FFD700;font-weight:600;">｜ 受光率 {cos_1ax_now:.1f}%</span></div>
+        <div class="bright-sub">今日累積：{energy_1ax:.2f} kWh/m² (較固定式增益 +{gain_1ax:.1f}%)</div>
+    </div>
+    """, unsafe_allow_html=True)
+    with st.container(border=True):
+        st.caption("**【② 大氣層雙胞胎：DNI 直射 + DHI 散射】** 面板總輻照度 $G_{\\text{POA}}$ 為需要對準角度的直射光加上均勻散射光：")
+        st.latex(r"G_{\text{POA}} = \text{DNI} \cdot \cos\theta_i + \text{DHI} \cdot \left(\frac{1 + \cos\beta}{2}\right)")
+        st.latex(rf"G_{{\text{{POA,固定}}}} = \color{{gold}}{{{cur_dni:.0f}}}\times\color{{deepskyblue}}{{{cos_fix_now/100.0:.2f}}} + \color{{limegreen}}{{{cur_dhi:.0f}}}\times 0.97 = \color{{red}}{{{poa_fix_now:.0f}\text{{ W/m}}^2}}")
+
+with f3:
+    st.markdown(f"""
+    <div class="bright-card">
+        <div class="bright-title">🟧 ③ 雙軸追日向日葵 (全向鎖定) —— 全日總發電增益</div>
+        <div class="bright-val-gold">+{gain_2ax:.1f}% 增益 <span style="font-size:1rem;color:#00E676;font-weight:600;">｜ 單軸 +{gain_1ax:.1f}%</span></div>
+        <div class="bright-sub">雙軸當前：{poa_2ax_now:.0f} W/m² (受光率 {cos_2ax_now:.0f}%) ｜ 累積：{energy_2ax:.2f} kWh/m²</div>
+    </div>
+    """, unsafe_allow_html=True)
+    with st.container(border=True):
+        st.caption("**【③ 為什麼追日能多榨出 25%~30% 電力？】** 把早晚斜射浪費的 $\\cos\\theta_i$ 扳正回 $100\\%$，讓發電曲線變成寬廣「胖鐘型」：")
+        st.latex(r"\text{Gain}_{\%} = \frac{\int G_{\text{POA, Tracker}}\,dt - \int G_{\text{POA, Fixed}}\,dt}{\int G_{\text{POA, Fixed}}\,dt}")
+        st.latex(rf"\text{{單軸增益}} = \color{{limegreen}}{{+{gain_1ax:.1f}\%}}, \quad \text{{雙軸增益}} = \color{{orange}}{{+{gain_2ax:.1f}\%}}")
+
+# ==================== 底部延伸摺疊區：全日胖鐘型曲線對決圖 ====================
+with st.expander("📈 點此展開查看：三種系統「全日接收總輻照度 POA 胖鐘型曲線」同場對決圖", expanded=True):
     fig_curve = go.Figure()
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=fix_d[4], mode='lines',
         line=dict(color='#3B82F6', width=3),
         fill='tozeroy', fillcolor='rgba(59, 130, 246, 0.15)',
-        name=f'🟦 固定式 (傾角 {fixed_tilt_deg:.0f}°)'
+        name=f'🟦 固定式 (傾角 {fixed_tilt_deg:.0f}°, 累積 {energy_fix:.2f} kWh/m²)'
     ))
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=ax1_d[4], mode='lines',
         line=dict(color='#10B981', width=3, dash='dash'),
         fill='tonexty', fillcolor='rgba(16, 185, 129, 0.18)',
-        name=f'🟩 單軸追日 (+{gain_1ax:.1f}% 發電增益)'
+        name=f'🟩 單軸追日 (+{gain_1ax:.1f}% 增益, 累積 {energy_1ax:.2f} kWh/m²)'
     ))
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=ax2_d[4], mode='lines',
         line=dict(color='#F59E0B', width=4),
         fill='tonexty', fillcolor='rgba(245, 158, 11, 0.20)',
-        name=f'🟧 雙軸追日 (+{gain_2ax:.1f}% 發電增益)'
+        name=f'🟧 雙軸追日 (+{gain_2ax:.1f}% 增益, 累積 {energy_2ax:.2f} kWh/m²)'
     ))
     fig_curve.add_vline(x=hour_t, line_width=2, line_dash="dot", line_color="#FFEA00", annotation_text=f"定格時刻 {hour_t:.2f}h")
 
@@ -484,68 +550,10 @@ with col_curve:
         title="<b>📊 三種系統全日接收總輻照度 POA (W/m²) —— 注意看早上 7~10 點與下午 14~17 點多榨出的橘色/綠色面積！</b>",
         xaxis_title="太陽時間 (小時)",
         yaxis_title="面板有效總輻照度 POA (W/m²)",
-        height=380,
-        margin=dict(l=20, r=20, t=45, b=20),
+        height=340,
+        margin=dict(l=20, r=20, t=40, b=20),
         paper_bgcolor='#0E1117', plot_bgcolor='#1E293B',
         font=dict(color='white'),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     st.plotly_chart(fig_curve, use_container_width=True)
-
-with col_kpi:
-    st.markdown("#### 🏆 同場競技計分板（今日累計）")
-    cos_fix_now = float(fix_res[3].flat[0]) * 100.0
-    cos_1ax_now = float(ax1_res[3].flat[0]) * 100.0
-    cos_2ax_now = float(ax2_res[3].flat[0]) * 100.0
-    poa_fix_now = float(fix_res[4].flat[0])
-
-    st.metric("🟦 ① 固定式系統 (基準組)", f"{energy_fix:.2f} kWh/m²", f"定格時刻受光率 cos(θi) = {cos_fix_now:.1f}%")
-    st.metric("🟩 ② 單軸追日系統 (東西向轉頭)", f"{energy_1ax:.2f} kWh/m²", f"+{gain_1ax:.1f}% 總能量提升！(受光率 {cos_1ax_now:.1f}%)")
-    st.metric("🟧 ③ 雙軸追日系統 (全向向日葵)", f"{energy_2ax:.2f} kWh/m²", f"+{gain_2ax:.1f}% 總能量提升！(受光率 {cos_2ax_now:.1f}%)")
-
-# ==================== 下方：物理公式白話導讀區 ====================
-st.markdown("---")
-st.markdown("### 📐 物理公式與知識白話導讀（隨上方控制拉桿即時跳動）")
-
-f1, f2, f3 = st.columns(3)
-
-with f1:
-    with st.container(border=True):
-        st.markdown("#### ① 什麼是「餘弦損失（Cosine Loss）」？")
-        st.markdown(
-            "**【白話導讀】** 拿手電筒垂直照桌面，光斑最小、最集中（$\\cos 0^\\circ = 100\\%$）；"
-            "但如果你斜著照，同樣一束光會被**攤平在更大的面積上**，單位面積分到的光子密度就打折了！"
-            "打折的比例剛好就是**太陽光線 $\\vec{S}$ 與面板法向量 $\\vec{n}$ 夾角 $\\theta_i$ 的餘弦值**："
-        )
-        st.latex(r"\eta_{\text{cosine}} = \cos\theta_i = \vec{S} \cdot \vec{n}")
-        theta_fix_deg = float(np.degrees(np.arccos(np.clip(cos_fix_now / 100.0, 0.0, 1.0))))
-        st.latex(
-            rf"\text{{固定式當前夾角 }} \theta_i = \color{{orange}}{{{theta_fix_deg:.1f}^\circ}} \implies \cos\theta_i = \color{{deepskyblue}}{{{cos_fix_now:.1f}\%}}"
-        )
-        st.caption("👉 雙軸追日因為隨時轉頭讓 $\\theta_i = 0^\\circ$，所以永遠保持 $\\cos 0^\\circ = 100\\%$ 零餘弦損失！")
-
-with f2:
-    with st.container(border=True):
-        st.markdown("#### ② 大氣層的雙胞胎：直射光 vs 散射光")
-        st.markdown(
-            "**【白話導讀】** 面板真正吃到的總陽光（$G_{\\text{POA}}$），是由需要對準角度的**直射光（DNI）**，"
-            "加上不需要對準角度、從整片天空均勻灑落的**散射光（DHI）**合體而成："
-        )
-        st.latex(r"G_{\text{POA}} = \text{DNI} \cdot \cos\theta_i + \text{DHI} \cdot \left(\frac{1 + \cos\beta}{2}\right)")
-        st.latex(
-            rf"G_{{\text{{POA,固定}}}} = \color{{gold}}{{{cur_dni:.0f}}} \times \color{{deepskyblue}}{{{cos_fix_now/100.0:.2f}}} + \color{{limegreen}}{{{cur_dhi:.0f}}} \times 0.97 = \color{{red}}{{{poa_fix_now:.0f}\text{{ W/m}}^2}}"
-        )
-        st.caption("👉 **教學實驗**：試著把左上方天氣切換成 **「☁️ 陰天厚雲」**！你會發現當沒有直射光（DNI 很低）時，追日系統就失去優勢了！")
-
-with f3:
-    with st.container(border=True):
-        st.markdown("#### ③ 為什麼追日系統能多榨出 25%~30% 電力？")
-        st.markdown(
-            "**【白話導讀】** 固定式面板只在正午 12 點前後能正面吃到陽光，早晚 6~9 點與 15~18 點的光線幾乎從側面擦過。"
-            "**追日系統把早晚原本斜射浪費的 $\\cos\\theta_i$ 硬生生「扳正」回 $95\\% \\sim 100\\%$**，讓尖峰發電曲線變成寬廣的「胖鐘型」："
-        )
-        st.latex(r"\text{Gain}_{\%} = \frac{\int G_{\text{POA, Tracker}}\,dt - \int G_{\text{POA, Fixed}}\,dt}{\int G_{\text{POA, Fixed}}\,dt}")
-        st.latex(
-            rf"\text{{單軸增益}} = \color{{limegreen}}{{+{gain_1ax:.1f}\%}}, \quad \text{{雙軸增益}} = \color{{orange}}{{+{gain_2ax:.1f}\%}}"
-        )
-        st.caption("👉 雖然雙軸發電最多，但考量機械造價與抗颱風結構，大型電廠最常採用 CP 值最高的「單軸追日」或「20°固定式」。")
