@@ -374,7 +374,19 @@ with col_ctrl:
 
     c_t1, c_t2 = st.columns([1.3, 1.0])
     with c_t1:
-        hour_t = st.slider("⏰ 定格時刻 t (小時)", 5.0, 19.25, 10.5, step=0.25)
+       # 建立 05:00 到 19:15（間距 15 分鐘）的時間選項列表
+    time_options = []
+    for h in range(5, 20):
+        for m in [0, 15, 30, 45]:
+            if h == 19 and m > 15:
+                continue
+            time_options.append(f"{h:02d}:{m:02d}")
+            
+    selected_time_str = st.selectbox("選擇或拉動觀察時刻", time_options, index=22) # 預設約 10:30
+    sh, sm = map(int, selected_time_str.split(":"))
+    hour_t = float(sh) + float(sm) / 60.0
+    
+    compare_seasons = st.checkbox("🌈 三季軌道", value=True)
     with c_t2:
         st.write("")
         compare_seasons = st.checkbox("🌈 三季軌道", value=True)
