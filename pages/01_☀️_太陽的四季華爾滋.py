@@ -425,4 +425,191 @@ def build_smooth_3d_celestial_figure(day_n, phi_deg, hour_t, compare_seasons, ca
             zaxis=dict(visible=False, range=[-0.05, 1.25]),
             aspectmode='manual',
             aspectratio=dict(x=1, y=1, z=0.62),
-            camera=dict(eye=cam_
+            camera=dict(eye=cam_eye, center=cam_center),
+            bgcolor='#0E1117'
+        ),
+        legend=dict(yanchor="top", y=0.88, xanchor="left", x=0.02, font=dict(color="white", size=12), bgcolor="rgba(0,0,0,0.5)"),
+        updatemenus=[dict(
+            type="buttons",
+            showactive=False,
+            x=0.02, y=0.02,
+            xanchor="left", yanchor="bottom",
+            direction="left",
+            pad=dict(r=10, t=10),
+            bgcolor="#1E293B",
+            font=dict(color="#FFFFFF", size=13),
+            buttons=[
+                dict(
+                    label="▶️ 播放一日東升西落",
+                    method="animate",
+                    args=[None, dict(frame=dict(duration=70, redraw=True), transition=dict(duration=0), fromcurrent=True, mode="immediate")]
+                ),
+                dict(
+                    label="⏸️ 暫停",
+                    method="animate",
+                    args=[[None], dict(frame=dict(duration=0, redraw=False), mode="immediate", transition=dict(duration=0))]
+                )
+            ]
+        )],
+        sliders=[dict(
+            active=int(np.clip((hour_t - 5.0) / 0.25, 0, len(slider_steps)-1)),
+            yanchor="bottom", xanchor="left",
+            currentvalue=dict(font=dict(size=14, color="#FFD700"), prefix="拖曳時間軸：", visible=True, xanchor="right"),
+            transition=dict(duration=0),
+            pad=dict(b=10, t=10),
+            len=0.72, x=0.26, y=0.02,
+            font=dict(color="#CBD5E1", size=10),
+            steps=slider_steps
+        )]
+    )
+    return fig, delta_deg, ws_deg, daylight_hr, sunrise, sunset, alpha_s_deg, cur_z
+
+# ==================== 主舞台配置：左拉桿控制台 (1.1) + 右 3D 主角視覺圖 (2.2) ====================
+col_ctrl, col_stage = st.columns([1.1, 2.2], gap="large")
+
+with col_ctrl:
+    st.markdown("### 🎛️ 互動控制台")
+
+    st.markdown("#### 🎥 1. 選擇觀察者視角（含學習任務指引）")
+    camera_mode = st.radio(
+        "切換 3D 鏡頭角度：",
+        [
+            "🌅 東升西落全景視角 (左東升 ➔ 右西落)",
+            "🔭 第三者上帝視角 (3D 天球立體鳥瞰)",
+            "☀️ 光子第一人稱視角 (從太陽往下看土地)",
+            "🧍 案場工程師視角 (由南向北仰望天空)"
+        ],
+        index=0
+    )
+
+    # 根據選擇的視角，定義「學習指南卡」與「3D HUD 抬頭提示」
+    if "東升西落全景視角" in camera_mode:
+        hud_subtitle = "👁️ 當前鏡頭：站在北側面向南方天空 —— 觀察太陽從畫面左方(東)升起、右方(西)落下"
+        with st.container(border=True):
+            st.markdown("##### 🎯 【東升西落視角】學習指南")
+            st.markdown(
+                "* **👁️ 你會看到什麼**：鏡頭架在北邊往南看，畫面**左邊是東方（日出）**、**中間是正南方（正午最高點）**、**右邊是西方（日落）**。\n"
+                "* **⏱️ 最佳切換時機**：**播放「一日太陽動畫」時首選！** 最符合人類看太陽左升右落的直覺。\n"
+                "* **🧪 動手實驗任務**：直接按下右圖左下角的 **「▶️ 播放一日東升西落」**，比較金黃色軌跡在夏天（高而長）與冬天（低而短）的差異。"
+            )
+    elif "第三者上帝視角" in camera_mode:
+        hud_subtitle = "👁️ 當前鏡頭：太空上帝鳥瞰視角 —— 比較紅(夏至)、綠(春秋分)、藍(冬至)三條立體軌道偏移"
+        with st.container(border=True):
+            st.markdown("##### 🎯 【第三者上帝視角】學習指南")
+            st.markdown(
+                "* **👁️ 你會看到什麼**：跳脫地面，從外太空斜上方俯瞰整座半透明天球穹頂，一眼看清**三季軌跡的南北偏移**。\n"
+                "* **⏱️ 最佳切換時機**：**調整「季節」與「地理緯度（特別是赤道 vs 北極圈）」時首選！**\n"
+                "* **🧪 動手實驗任務**：請把下方緯度切換到 **「🐻 北極圈斯瓦爾巴 (68°N)」** 並選 **「☀️ 夏至」**，你會親眼看到太陽軌跡變成一個「懸在空中永不落下的水平圓圈（極晝永晝）」！"
+            )
+    elif "光子第一人稱視角" in camera_mode:
+        hud_subtitle = "👁️ 當前鏡頭：光子第一人稱視角 —— 坐在太陽上往下俯瞰地面中央的藍色太陽能板"
+        with st.container(border=True):
+            st.markdown("##### 🎯 【光子第一人稱視角】學習指南")
+            st.markdown(
+                "* **👁️ 你會看到什麼**：你現在就是那顆光子！鏡頭架設在太陽的位置，直接順著光束往下看著地面中心的藍色太陽能板。\n"
+                "* **⏱️ 最佳切換時機**：**手動拉動「定格時刻滑桿（比較早晨 07:00 vs 正午 12:00）」時首選！**\n"
+                "* **🧪 動手實驗任務**：試著把下方時間滑桿拉到 **06:30（剛日出）** 與 **12:00（正午）**，感受光子從「側面斜睨大地」變成「從頭頂垂直俯衝」的視角變化！"
+            )
+    else:
+        hud_subtitle = "👁️ 當前鏡頭：案場工程師視角 —— 站在太陽能板南側往北方天空仰望，檢視面板傾角與受光面"
+        with st.container(border=True):
+            st.markdown("##### 🎯 【案場工程師視角】學習指南")
+            st.markdown(
+                "* **👁️ 你會看到什麼**：模擬工程師站在台南七股電廠裡，由南向北看，清楚觀察中央藍色太陽能板「朝南傾斜 20°」的側面結構。\n"
+                "* **⏱️ 最佳切換時機**：**理解為什麼北半球的太陽能板一定要「朝南傾斜」時首選！**\n"
+                "* **🧪 動手實驗任務**：將季節切換到 **「❄️ 冬至 (12/21)」**，你會發現冬天的太陽軌道整條偏在南邊低空，這時朝南傾斜的面板剛好能正面迎擊陽光！"
+            )
+
+    st.markdown("#### 🎡 2. 調整季節與地理緯度")
+    season_preset = st.selectbox(
+        "快速節氣定位：",
+        ["☀️ 夏至 (6/21, 太陽直射北回歸線)", "🌸 春分 (3/21, 太陽直射赤道)", "🍁 秋分 (9/23, 太陽直射赤道)", "❄️ 冬至 (12/21, 太陽直射南回歸線)", "自訂日期"],
+        index=0
+    )
+    preset_map = {
+        "🌸 春分 (3/21, 太陽直射赤道)": 80,
+        "☀️ 夏至 (6/21, 太陽直射北回歸線)": 172,
+        "🍁 秋分 (9/23, 太陽直射赤道)": 266,
+        "❄️ 冬至 (12/21, 太陽直射南回歸線)": 355
+    }
+    default_n = preset_map.get(season_preset, 172)
+    day_n = st.slider("📅 一年中的第幾天 (n)", 1, 365, default_n)
+
+    lat_preset = st.selectbox(
+        "地理緯度定位：",
+        ["🇹🇼 台灣台南七股 (23.15°N)", "🇹🇼 台灣台北 (25.03°N)", "🌴 赤道新加坡 (1.35°N)", "🗼 日本東京 (35.68°N)", "🐻 北極圈斯瓦爾巴 (68.0°N)"]
+    )
+    lat_map = {
+        "🇹🇼 台灣台南七股 (23.15°N)": 23.15,
+        "🇹🇼 台灣台北 (25.03°N)": 25.03,
+        "🌴 赤道新加坡 (1.35°N)": 1.35,
+        "🗼 日本東京 (35.68°N)": 35.68,
+        "🐻 北極圈斯瓦爾巴 (68.0°N)": 68.0
+    }
+    phi_deg = st.slider("🧭 所在緯度 φ (°N)", -66.5, 70.0, lat_map[lat_preset], step=0.5)
+
+    st.markdown("#### ⏰ 3. 定格計算時刻 (連動光子視角與下方公式)")
+    hour_t = st.slider("選擇時刻 (24小時制)", 5.0, 19.25, 10.5, step=0.25)
+    compare_seasons = st.checkbox("🌈 疊加顯示春分/夏至/冬至三條軌道", value=True)
+
+with col_stage:
+    fig, delta_deg, ws_deg, daylight_hr, sunrise, sunset, alpha_s_deg, cur_z = build_smooth_3d_celestial_figure(
+        day_n, phi_deg, hour_t, compare_seasons, camera_mode, hud_subtitle
+    )
+    st.plotly_chart(fig, use_container_width=True, key="celestial_3d_stage")
+
+    # 情境感知動態學習回饋橫幅
+    if daylight_hr >= 23.9:
+        st.success("🌞 **【極晝現象觸發】** 你目前位於高緯度夏季！太陽 24 小時在天空中繞圈永不落下（日落時角 $\\omega_s = 180^\\circ$），請切換至「🔭 第三者上帝視角」欣賞懸浮圓環軌跡！")
+    elif daylight_hr <= 0.1:
+        st.error("🌑 **【極夜現象觸發】** 你目前位於高緯度冬季！太陽整天都在地平線以下（日照 0 小時），完全無法進行太陽能發電！")
+    elif abs(phi_deg - delta_deg) < 1.5 and abs(hour_t - 12.0) < 0.6:
+        st.success("🔥 **【立竿見影（太陽直射天頂）觸發】** 此時太陽赤緯角 $\\delta$ 剛好等於當地緯度 $\\phi$（如夏至的台灣嘉南平原），正午太陽仰角高達 $90^\\circ$ 直射頭頂！")
+    else:
+        st.caption("💡 **操作秘訣**：點擊黑底圖表左下角的 **「▶️ 播放一日東升西落」** 可觀看無閃爍動畫；播放中依然可用滑鼠左鍵拖曳 360° 旋轉視角！")
+
+# ==================== 下方：數據變化儀表板 + 物理公式白話導讀 ====================
+st.markdown("---")
+st.markdown("### 📊 太陽幾何即時數據與物理公式導讀（隨上方控制拉桿連動）")
+
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("📐 太陽赤緯角 (δ)", f"{delta_deg:+.2f}°", "決定四季直射緯度")
+m2.metric("🌅 日出 ～ 🌇 日落時刻", f"{int(sunrise):02d}:{int((sunrise%1)*60):02d} ～ {int(sunset):02d}:{int((sunset%1)*60):02d}", f"日落時角 ωs = {ws_deg:.1f}°")
+m3.metric("⏳ 今日可發電白晝時數", f"{daylight_hr:.2f} 小時", f"{daylight_hr - 12.0:+.2f} hr (相較春分12小時)")
+m4.metric("☀️ 定格時刻太陽仰角 (αs)", f"{alpha_s_deg:.1f}°", f"地面水平受光率 {max(0.0, cur_z)*100:.1f}%")
+
+f_col1, f_col2, f_col3 = st.columns(3)
+
+with f_col1:
+    with st.container(border=True):
+        st.markdown("#### ① 為什麼四季太陽軌跡會南北移動？")
+        st.markdown(
+            "**【公式導讀】** 因為地球自轉軸傾斜了 **23.45°**，導致一年 365 天當中，太陽直射地球的緯度（稱為**赤緯角 $\\delta$**）"
+            "會在北緯 $+23.45^\\circ$（夏至）與南緯 $-23.45^\\circ$（冬至）之間像跳華爾滋一樣來回擺盪："
+        )
+        st.latex(r"\delta = 23.45^\circ \times \sin\left[\frac{360^\circ}{365} \times (284 + n)\right]")
+        st.latex(rf"\text{{代入 }} n=\color{{orange}}{{{day_n}}} \implies \delta = \color{{red}}{{{delta_deg:+.2f}^\circ}}")
+        st.caption("👉 推薦搭配 **「🔭 第三者上帝視角」** 觀察紅、綠、藍三條軌道的南北位移。")
+
+with f_col2:
+    with st.container(border=True):
+        st.markdown("#### ② 為什麼夏天白晝長、冬天白晝短？")
+        st.markdown(
+            "**【公式導讀】** 地球每小時自轉 $15^\\circ$。當太陽從正午（$0^\\circ$）轉到地平線落下時所走過的角度，"
+            "稱為**日落時角 $\\omega_s$**。它由你所在的緯度 $\\phi$ 與赤緯角 $\\delta$ 共同決定："
+        )
+        st.latex(r"\omega_s = \arccos(-\tan\phi \cdot \tan\delta)")
+        st.latex(rf"\omega_s = \arccos(-\tan(\color{{orange}}{{{phi_deg:.1f}^\circ}})\tan(\color{{red}}{{{delta_deg:+.2f}^\circ}})) = \color{{deepskyblue}}{{{ws_deg:.1f}^\circ}}")
+        st.latex(rf"\text{{白晝總時數 }} N = \frac{{2 \times \color{{deepskyblue}}{{{ws_deg:.1f}^\circ}}}}{{15^\circ/\text{{hr}}}} = \color{{limegreen}}{{{daylight_hr:.2f} \text{{ 小時}}}}")
+
+with f_col3:
+    with st.container(border=True):
+        st.markdown("#### ③ 太陽高度如何決定地面受光效率？")
+        st.markdown(
+            "**【公式導讀】** 隨著時間 $t$ 推進（時角 $\\omega = 15^\\circ(t-12)$），太陽離地平線的高度角 $\\alpha_s$ 會從東邊 $0^\\circ$ "
+            "爬升到正午最高點，再落回西邊 $0^\\circ$："
+        )
+        st.latex(r"\sin\alpha_s = \sin\phi\sin\delta + \cos\phi\cos\delta\cos\omega")
+        omega_now = 15.0 * (hour_t - 12.0)
+        st.latex(rf"\text{{當前時角 }} \omega = \color{{orange}}{{{omega_now:+.1f}^\circ}} \implies \alpha_s = \color{{gold}}{{{alpha_s_deg:.1f}^\circ}}")
+        st.caption("👉 推薦切換至 **「☀️ 光子第一人稱視角」** 並拉動時間滑桿，體會不同仰角下的照射角度！")
