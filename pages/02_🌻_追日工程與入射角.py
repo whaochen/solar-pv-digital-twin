@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="第 2 章：大氣層與光線的捕捉", page_icon="🌻", layout="wide")
 
-# 緊湊化版面與高亮度數據卡 CSS（確保亮色/暗色主題下數字都極致明亮清晰，且上下同框）
+# 緊湊化版面與高亮度數據卡 CSS
 st.markdown("""
 <style>
     .block-container { padding-top: 1.2rem !important; padding-bottom: 1rem !important; }
@@ -320,7 +320,7 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
 
     fig.frames = frames
 
-    # 設定攝影機視角 (拉近並置中三座面板)
+    # 設定攝影機視角
     if "光子第一人稱視角" in camera_mode:
         cam_eye = dict(x=sx * 1.55, y=sy * 1.55 - 0.15, z=max(0.32, sz * 1.55))
         cam_center = dict(x=0.0, y=0.0, z=0.14)
@@ -356,7 +356,6 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
             bgcolor='#0E1117'
         ),
         legend=dict(orientation="h", yanchor="top", y=0.90, xanchor="left", x=0.02, font=dict(color="white", size=11), bgcolor="rgba(15,23,42,0.75)"),
-        # 【關鍵對齊】將「▶️ 播放一日追日對決」與「⏸️ 暫停」按鈕移至右上角 (x=0.98, y=0.98)！
         updatemenus=[dict(
             type="buttons", showactive=False,
             x=0.98, y=0.98, xanchor="right", yanchor="top", direction="left",
@@ -459,7 +458,7 @@ with col_stage:
     )
     st.plotly_chart(fig_arena, use_container_width=True, key="tracker_arena_3d")
 
-# ==================== 下半部：高亮度即時數據 ＋ 物理公式白話導讀（正下方一體化連動） ====================
+# ==================== 中段：高亮度即時數據 ＋ 物理公式白話導讀（正下方一體化連動） ====================
 t_day = np.linspace(5.5, 18.5, 131)
 sx_d, sy_d, sz_d, _ = calc_sun_vector(day_n, t_day, phi_deg)
 am_d = np.where(sz_d > 0.02, np.power(np.clip(sz_d, 0.02, 1.0), 0.35), 0.0)
@@ -523,37 +522,95 @@ with f3:
         st.latex(r"\text{Gain}_{\%} = \frac{\int G_{\text{POA, Tracker}}\,dt - \int G_{\text{POA, Fixed}}\,dt}{\int G_{\text{POA, Fixed}}\,dt}")
         st.latex(rf"\text{{單軸增益}} = \color{{limegreen}}{{+{gain_1ax:.1f}\%}}, \quad \text{{雙軸增益}} = \color{{orange}}{{+{gain_2ax:.1f}\%}}")
 
-# ==================== 底部延伸摺疊區：全日胖鐘型曲線對決圖 ====================
-with st.expander("📈 點此展開查看：三種系統「全日接收總輻照度 POA 胖鐘型曲線」同場對決圖", expanded=True):
+# ==================== 底部：左解說導引 (1.0) + 右高挑飽滿「胖鐘型曲線圖」(1.85) ====================
+st.markdown("---")
+col_guide, col_curve = st.columns([1.0, 1.85], gap="large")
+
+with col_guide:
+    with st.container(border=True):
+        st.markdown("#### 📖 「胖鐘型發電曲線」觀圖導引")
+        st.markdown(
+            "為什麼太陽能工程師稱追日系統為**「削峰填谷、拉寬肩膀」**的神器？請對照右側曲線觀察 **3 個關鍵時刻**：\n\n"
+            "1. **🌅 早晨（06:30 ~ 10:00）與 🌇 傍晚（14:00 ~ 17:30）**：\n"
+            "   * **🟦 固定式（藍線）** 因為面朝南方不動，早晚陽光從東、西兩側斜射擦過，曲線像「瘦高的山峰」，兩側肩膀嚴重凹陷。\n"
+            "   * **🟩 單軸（綠虛線）** 與 **🟧 雙軸（橘線）** 轉頭迎光，硬生生把早晚的曲線「撐起來」，多吃進大片**綠色與橘色陰影面積（多榨出 $+25\\% \\sim +40\\%$ 電能）**！\n"
+            "2. **☀️ 正午 12:00 巔峰時刻**：\n"
+            "   * 三條曲線在中午幾乎交會！代表正午陽光直射時，固定式表現並不輸追日系統。\n"
+            "3. **电网價值（傍晚尖峰供電）**：\n"
+            "   * 台灣電力系統最缺電的時刻是**下午 15:00 ~ 17:30（日落前冷氣負載仍高）**，追日系統在傍晚多發出的電力對穩定電網價值連城！"
+        )
+        st.info(
+            f"🎯 **當前定格時刻（{int(hour_t):02d}:{int((hour_t%1)*60):02d}）即時比對**：\n"
+            f"* 🟦 固定式：**{poa_fix_now:.0f} W/m²**\n"
+            f"* 🟩 單軸追日：**{poa_1ax_now:.0f} W/m²**（多拿 **+{poa_1ax_now - poa_fix_now:.0f} W/m²**）\n"
+            f"* 🟧 雙軸追日：**{poa_2ax_now:.0f} W/m²**（多拿 **+{poa_2ax_now - poa_fix_now:.0f} W/m²**）"
+        )
+
+with col_curve:
     fig_curve = go.Figure()
+
+    # 1. 固定式 (清透皇家藍填色)
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=fix_d[4], mode='lines',
-        line=dict(color='#3B82F6', width=3),
-        fill='tozeroy', fillcolor='rgba(59, 130, 246, 0.15)',
-        name=f'🟦 固定式 (傾角 {fixed_tilt_deg:.0f}°, 累積 {energy_fix:.2f} kWh/m²)'
+        line=dict(color='#1D4ED8', width=3.5),
+        fill='tozeroy', fillcolor='rgba(37, 99, 235, 0.16)',
+        name=f'🟦 固定式 ({fixed_tilt_deg:.0f}° 傾角：{energy_fix:.2f} kWh/m²)'
     ))
+
+    # 2. 單軸追日 (鮮明翡翠綠虛線 + 增益面積填色)
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=ax1_d[4], mode='lines',
-        line=dict(color='#10B981', width=3, dash='dash'),
-        fill='tonexty', fillcolor='rgba(16, 185, 129, 0.18)',
-        name=f'🟩 單軸追日 (+{gain_1ax:.1f}% 增益, 累積 {energy_1ax:.2f} kWh/m²)'
+        line=dict(color='#059669', width=3.5, dash='dash'),
+        fill='tonexty', fillcolor='rgba(16, 185, 129, 0.22)',
+        name=f'🟩 單軸追日 (+{gain_1ax:.1f}% 增益：{energy_1ax:.2f} kWh/m²)'
     ))
+
+    # 3. 雙軸追日 (高飽和琥珀橘實線 + 額外增益填色)
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=ax2_d[4], mode='lines',
-        line=dict(color='#F59E0B', width=4),
-        fill='tonexty', fillcolor='rgba(245, 158, 11, 0.20)',
-        name=f'🟧 雙軸追日 (+{gain_2ax:.1f}% 增益, 累積 {energy_2ax:.2f} kWh/m²)'
+        line=dict(color='#D97706', width=4),
+        fill='tonexty', fillcolor='rgba(245, 158, 11, 0.25)',
+        name=f'🟧 雙軸追日 (+{gain_2ax:.1f}% 增益：{energy_2ax:.2f} kWh/m²)'
     ))
-    fig_curve.add_vline(x=hour_t, line_width=2, line_dash="dot", line_color="#FFEA00", annotation_text=f"定格時刻 {hour_t:.2f}h")
 
+    # 標示當前選擇時刻的醒目垂直指標線
+    fig_curve.add_vline(
+        x=hour_t, line_width=2.5, line_dash="dot", line_color="#DC2626",
+        annotation_text=f"<b>⏰ 定格時刻 {int(hour_t):02d}:{int((hour_t%1)*60):02d}</b>",
+        annotation_position="top left",
+        annotation_font=dict(color="#DC2626", size=13)
+    )
+
+    # 採用清爽高對比白底科研主題，徹底解決亮色模式黑字撞黑底與標題重疊問題！
     fig_curve.update_layout(
-        title="<b>📊 三種系統全日接收總輻照度 POA (W/m²) —— 注意看早上 7~10 點與下午 14~17 點多榨出的橘色/綠色面積！</b>",
-        xaxis_title="太陽時間 (小時)",
-        yaxis_title="面板有效總輻照度 POA (W/m²)",
-        height=340,
-        margin=dict(l=20, r=20, t=40, b=20),
-        paper_bgcolor='#0E1117', plot_bgcolor='#1E293B',
-        font=dict(color='white'),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        title=dict(
+            text="<b>📊 三種系統全日接收總輻照度 POA (W/m²) 同場對決</b>",
+            font=dict(size=17, color="#0F172A"),
+            x=0.02, y=0.96
+        ),
+        xaxis=dict(
+            title=dict(text="<b>太陽時間 (小時)</b>", font=dict(color="#1E293B", size=13)),
+            tickfont=dict(color="#334155", size=12),
+            gridcolor="#E2E8F0", zerolinecolor="#CBD5E1",
+            dtick=2
+        ),
+        yaxis=dict(
+            title=dict(text="<b>面板有效總輻照度 POA (W/m²)</b>", font=dict(color="#1E293B", size=13)),
+            tickfont=dict(color="#334155", size=12),
+            gridcolor="#E2E8F0", zerolinecolor="#CBD5E1",
+            range=[0, max(1080.0, float(np.max(ax2_d[4])) * 1.12)]
+        ),
+        height=450,
+        margin=dict(l=60, r=25, t=85, b=50),
+        paper_bgcolor='#FFFFFF',
+        plot_bgcolor='#F8FAFC',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="left", x=0.0,
+            font=dict(color="#0F172A", size=12),
+            bgcolor="rgba(241, 245, 249, 0.9)",
+            bordercolor="#CBD5E1", borderwidth=1
+        )
     )
     st.plotly_chart(fig_curve, use_container_width=True)
