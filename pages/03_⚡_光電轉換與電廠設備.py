@@ -30,8 +30,8 @@ def make_3d_box(cx, cy, cz, dx, dy, dz, color, name, opacity=0.9):
 def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
     fig = go.Figure()
 
-    # [Trace 0] 案場地面
-    xg, yg = np.meshgrid(np.linspace(-1.7, 1.7, 12), np.linspace(-1.0, 1.0, 12))
+    # [Trace 0] 案場地面 (拉寬 X 軸至 -2.1 ~ +2.1，讓四座設備橫向寬敞排列)
+    xg, yg = np.meshgrid(np.linspace(-2.1, 2.1, 12), np.linspace(-0.9, 0.9, 12))
     fig.add_trace(go.Surface(
         x=xg, y=yg, z=np.zeros_like(xg),
         opacity=0.35, showscale=False,
@@ -39,33 +39,27 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
         hoverinfo='skip', name='案場地面'
     ))
 
-    # [Trace 1] 方位地標與高空太陽
+    # [Trace 1] 高空太陽 (移除地面雜亂的東南西北字樣，只留高空太陽在左上角)
     fig.add_trace(go.Scatter3d(
-        x=[0.0, 0.0, -1.6, 1.6, -1.05],
-        y=[-0.95, 0.95, 0.0, 0.0, -0.45],
-        z=[0.04, 0.04, 0.04, 0.04, 0.95],
+        x=[-1.35],
+        y=[-0.35],
+        z=[0.75],
         mode='text+markers',
-        marker=dict(size=[1, 1, 1, 1, 26], color=['#FFF', '#FFF', '#FFF', '#FFF', '#FFEA00']),
-        text=[
-            '<b>⬇️ 南方 (S) 工程師站立側</b>',
-            '<b>⬆️ 北方 (N)</b>',
-            '<b>🌅 東方 (E)</b>',
-            '<b>🌇 西方 (W)</b>',
-            '<b>☀️ 高空太陽 (光子源)</b>'
-        ],
+        marker=dict(size=[28], color=['#FFEA00']),
+        text=['<b>☀️ 高空太陽 (光子發射源)</b>'],
         textposition="top center",
-        textfont=dict(size=[12, 12, 12, 12, 14], color=['#FF6B6B', '#00E5FF', '#FFD700', '#FF8C00', '#FFEA00']),
+        textfont=dict(size=14, color='#FFEA00'),
         showlegend=False
     ))
 
-    # [Trace 2 & 3] 設備 ①：太陽能光電陣列 (PV Array，兩排向南傾斜 22 度的深藍色面板)
-    for row_idx, py_c in enumerate([-0.28, 0.22]):
-        px_c = -1.05
-        w, l = 0.36, 0.16
+    # [Trace 2 & 3] 設備 ①：太陽能光電陣列 (位於左側 X = -1.35)
+    for row_idx, py_c in enumerate([-0.26, 0.22]):
+        px_c = -1.35
+        w, l = 0.38, 0.16
         tilt = np.radians(22.0)
         vx = [px_c - w, px_c + w, px_c + w, px_c - w]
         vy = [py_c - l*np.cos(tilt), py_c - l*np.cos(tilt), py_c + l*np.cos(tilt), py_c + l*np.cos(tilt)]
-        vz = [0.10, 0.10, 0.10 + 2*l*np.sin(tilt), 0.10 + 2*l*np.sin(tilt)]
+        vz = [0.08, 0.08, 0.08 + 2*l*np.sin(tilt), 0.08 + 2*l*np.sin(tilt)]
         fig.add_trace(go.Mesh3d(
             x=vx, y=vy, z=vz, i=[0, 0], j=[1, 2], k=[2, 3],
             color='#2563EB', opacity=0.92,
@@ -73,24 +67,24 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
             showlegend=(row_idx == 0)
         ))
 
-    # [Trace 4] 設備 ②：智慧逆變器 (Inverter，橘色機櫃，X = -0.25)
-    fig.add_trace(make_3d_box(-0.25, 0.0, 0.15, 0.14, 0.14, 0.15, '#EA580C', '② 逆變器 (DC 轉 AC)'))
+    # [Trace 4] 設備 ②：智慧逆變器 (位於中左 X = -0.35，與面板拉開距離)
+    fig.add_trace(make_3d_box(-0.35, 0.0, 0.14, 0.15, 0.15, 0.14, '#EA580C', '② 逆變器 (DC 轉 AC)'))
 
-    # [Trace 5] 設備 ③：升壓變壓器 (Transformer，綠色機櫃，X = +0.50)
-    fig.add_trace(make_3d_box(0.50, 0.0, 0.19, 0.17, 0.17, 0.19, '#059669', '③ 升壓變壓器 (升壓至 22.8kV)'))
+    # [Trace 5] 設備 ③：升壓變壓器 (位於中右 X = +0.55，與逆變器拉開距離)
+    fig.add_trace(make_3d_box(0.55, 0.0, 0.18, 0.18, 0.18, 0.18, '#059669', '③ 升壓變壓器 (升壓至 22.8kV)'))
 
-    # [Trace 6] 設備 ④：台電高壓輸電鐵塔 (X = +1.30)
+    # [Trace 6] 設備 ④：台電高壓輸電鐵塔 (位於右側 X = +1.55)
     tx_tower = [
-        1.18, 1.30, None, 1.42, 1.30, None, 1.18, 1.30, None, 1.42, 1.30, None,
-        1.10, 1.50, None, 1.15, 1.45, None, 1.30, 1.30
+        1.42, 1.55, None, 1.68, 1.55, None, 1.42, 1.55, None, 1.68, 1.55, None,
+        1.32, 1.78, None, 1.38, 1.72, None, 1.55, 1.55
     ]
     ty_tower = [
         -0.12, 0.0, None, -0.12, 0.0, None, 0.12, 0.0, None, 0.12, 0.0, None,
         0.0, 0.0, None, 0.0, 0.0, None, 0.0, 0.0
     ]
     tz_tower = [
-        0.0, 0.68, None, 0.0, 0.68, None, 0.0, 0.68, None, 0.0, 0.68, None,
-        0.42, 0.42, None, 0.58, 0.58, None, 0.0, 0.74
+        0.0, 0.58, None, 0.0, 0.58, None, 0.0, 0.58, None, 0.0, 0.58, None,
+        0.36, 0.36, None, 0.50, 0.50, None, 0.0, 0.64
     ]
     fig.add_trace(go.Scatter3d(
         x=tx_tower, y=ty_tower, z=tz_tower,
@@ -100,15 +94,15 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
         name='④ 台電高壓電塔 (併入電網)'
     ))
 
-    # [Trace 7] 簡潔清晰的設備頭頂標籤
+    # [Trace 7] 設備頭頂標籤 (X 座標橫向拉開：-1.35, -0.35, +0.55, +1.55，絕不互相重疊)
     p_dc = irradiance * 1.0 * (panel_eff / 100.0)
     p_ac = p_dc * (inv_eff / 100.0)
     p_grid = p_ac * (tx_eff / 100.0)
 
     fig.add_trace(go.Scatter3d(
-        x=[-1.05, -0.25, 0.50, 1.30],
+        x=[-1.35, -0.35, 0.55, 1.55],
         y=[0.0, 0.0, 0.0, 0.0],
-        z=[0.40, 0.42, 0.50, 0.82],
+        z=[0.32, 0.36, 0.44, 0.70],
         mode='text',
         text=[
             f"<b>① 太陽能板 ({p_dc:.0f} kW DC)</b>",
@@ -122,9 +116,9 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
 
     # [Trace 8] 靜態電纜管道
     fig.add_trace(go.Scatter3d(
-        x=[-1.05, -0.25, 0.50, 1.30],
+        x=[-1.35, -0.35, 0.55, 1.55],
         y=[0.0, 0.0, 0.0, 0.0],
-        z=[0.14, 0.14, 0.20, 0.50],
+        z=[0.12, 0.12, 0.18, 0.44],
         mode='lines',
         line=dict(color='#64748B', width=8),
         name='電力傳輸電纜'
@@ -133,15 +127,15 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
     # [Trace 9] 動態能量粒子流
     dyn_idx = len(fig.data)
     fig.add_trace(go.Scatter3d(
-        x=[-1.05, -0.65, 0.12, 0.90],
+        x=[-1.35, -0.85, 0.10, 1.05],
         y=[-0.20, 0.0, 0.0, 0.0],
-        z=[0.65, 0.15, 0.18, 0.35],
+        z=[0.55, 0.13, 0.16, 0.32],
         mode='markers',
         marker=dict(size=[13, 11, 13, 15], color=['#FFEA00', '#00E5FF', '#00E676', '#FDE047'], symbol='circle'),
         name='⚡ 能量粒子 (黃:光子 / 藍:DC / 綠:AC)'
     ))
 
-    # 建立多週期連續循環動畫影格 (120 影格 = 連續循環 6 次，按下播放即可長時間自動循環)
+    # 建立多週期連續循環動畫影格 (120 影格)
     frames = []
     n_steps_per_cycle = 20
     total_cycles = 6
@@ -150,27 +144,27 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
     for f_i in range(total_frames):
         prog = (f_i % n_steps_per_cycle) / float(n_steps_per_cycle)
 
-        # 1. 金色光子從高空太陽 (-1.05, -0.45, 0.95) 連續飛向兩排面板
+        # 1. 金色光子從高空太陽 (-1.35, -0.35, 0.75) 飛向面板
         p_t = (prog * 2.0) % 1.0
-        ph_x = [-1.20 + 0.10 * k for k in range(4)]
-        ph_y = [-0.45 * (1 - p_t) + (-0.28 if k % 2 == 0 else 0.22) * p_t for k in range(4)]
-        ph_z = [0.92 * (1 - p_t) + 0.18 * p_t for k in range(4)]
+        ph_x = [-1.50 + 0.10 * k for k in range(4)]
+        ph_y = [-0.35 * (1 - p_t) + (-0.26 if k % 2 == 0 else 0.22) * p_t for k in range(4)]
+        ph_z = [0.72 * (1 - p_t) + 0.15 * p_t for k in range(4)]
 
-        # 2. 面板到逆變器的藍色 DC 直流電子 (-1.05 -> -0.25)
-        dc_x = [-1.05 + 0.80 * ((prog + 0.33 * k) % 1.0) for k in range(3)]
+        # 2. 面板到逆變器的藍色 DC 直流電子 (-1.35 -> -0.35)
+        dc_x = [-1.35 + 1.00 * ((prog + 0.33 * k) % 1.0) for k in range(3)]
         dc_y = [0.0, 0.0, 0.0]
-        dc_z = [0.15, 0.15, 0.15]
+        dc_z = [0.13, 0.13, 0.13]
 
-        # 3. 逆變器到變壓器的綠色 AC 交流弦波粒子 (-0.25 -> 0.50)
-        ac_x = [-0.25 + 0.75 * ((prog + 0.33 * k) % 1.0) for k in range(3)]
+        # 3. 逆變器到變壓器的綠色 AC 交流弦波粒子 (-0.35 -> +0.55)
+        ac_x = [-0.35 + 0.90 * ((prog + 0.33 * k) % 1.0) for k in range(3)]
         ac_y = [0.06 * np.sin(2 * np.pi * ((prog + 0.33 * k) * 2.0)) for k in range(3)]
-        ac_z = [0.18, 0.18, 0.18]
+        ac_z = [0.16, 0.16, 0.16]
 
-        # 4. 變壓器衝向高壓電塔的亮黃色高壓綠電 (0.50 -> 1.30)
+        # 4. 變壓器衝向高壓電塔的亮黃色高壓綠電 (+0.55 -> +1.55)
         hv_u = [(prog + 0.33 * k) % 1.0 for k in range(3)]
-        hv_x = [0.50 + 0.80 * u for u in hv_u]
+        hv_x = [0.55 + 1.00 * u for u in hv_u]
         hv_y = [0.0, 0.0, 0.0]
-        hv_z = [0.20 + 0.30 * u + 0.05 * np.sin(np.pi * u) for u in hv_u]
+        hv_z = [0.18 + 0.26 * u + 0.04 * np.sin(np.pi * u) for u in hv_u]
 
         all_x = ph_x + dc_x + ac_x + hv_x
         all_y = ph_y + dc_y + ac_y + hv_y
@@ -190,37 +184,38 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
 
     fig.frames = frames
 
-    # 固定採用「🧍 案場工程師視角 (由南向北仰望天空與太陽能板)」最佳構圖
-    cam_eye = dict(x=-0.15, y=-1.65, z=0.38)
-    cam_center = dict(x=-0.05, y=0.0, z=0.32)
+    # 【關鍵修正 1】將攝影機 center.z 調低至 0.12，讓整座電廠模型「往上提」到畫面正中央，不再沉在底部！
+    cam_eye = dict(x=0.0, y=-1.75, z=0.35)
+    cam_center = dict(x=0.05, y=0.0, z=0.12)
 
     fig.update_layout(
         title=dict(
-            text=f"<b>🧍 案場工程師視角 (由南向北仰望) ｜ ☀️光子 ➔ 🔵DC直流 ➔ 🟢AC交流 ➔ ⚡併網功率：{p_grid:.1f} kW</b>",
+            text=f"<b>🧍 案場工程師視角 ｜ ☀️光子 ➔ 🔵DC ➔ 🟢AC ➔ ⚡併網：{p_grid:.1f} kW</b>",
             font=dict(size=16, color="#FFD700"), x=0.02, y=0.96
         ),
-        height=640,
-        margin=dict(l=0, r=0, b=65, t=45),
+        height=620,
+        margin=dict(l=0, r=0, b=10, t=55),
         paper_bgcolor='#0E1117',
         scene=dict(
-            xaxis=dict(visible=False, range=[-1.7, 1.7]),
-            yaxis=dict(visible=False, range=[-1.1, 1.1]),
-            zaxis=dict(visible=False, range=[0.0, 1.15]),
-            aspectmode='manual', aspectratio=dict(x=1.55, y=0.9, z=0.68),
+            xaxis=dict(visible=False, range=[-2.15, 2.15]),
+            yaxis=dict(visible=False, range=[-1.0, 1.0]),
+            zaxis=dict(visible=False, range=[-0.02, 0.88]),
+            aspectmode='manual', aspectratio=dict(x=1.75, y=0.85, z=0.65),
             camera=dict(eye=cam_eye, center=cam_center),
             bgcolor='#0E1117'
         ),
         legend=dict(
-            orientation="h", yanchor="top", y=0.93, xanchor="left", x=0.02,
+            orientation="h", yanchor="top", y=0.91, xanchor="left", x=0.02,
             font=dict(color="white", size=11), bgcolor="rgba(15, 23, 42, 0.75)"
         ),
+        # 【關鍵修正 2】將播放按鈕移至畫面「右上角 (x=0.98, y=0.98)」，完全不遮擋下方任何 3D 設備！
         updatemenus=[dict(
             type="buttons", showactive=False,
-            x=0.02, y=0.02, xanchor="left", yanchor="bottom", direction="left",
-            pad=dict(r=10, t=5), bgcolor="#1E293B", font=dict(color="#FFFFFF", size=14),
+            x=0.98, y=0.98, xanchor="right", yanchor="top", direction="left",
+            pad=dict(r=5, t=0), bgcolor="#2563EB", font=dict(color="#FFFFFF", size=13),
             buttons=[
                 dict(
-                    label="🔄 循環播放「光子 ➔ 電網」能量流",
+                    label="🔄 點此循環播放能量流",
                     method="animate",
                     args=[None, dict(frame=dict(duration=85, redraw=True), transition=dict(duration=0), fromcurrent=False, mode="immediate")]
                 ),
@@ -239,46 +234,49 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
 def build_micro_pn_junction_3d(irradiance, panel_eff):
     fig = go.Figure()
 
-    # 分層爆炸圖結構
-    fig.add_trace(make_3d_box(-0.15, 0, 0.07, 0.75, 0.50, 0.03, '#64748B', '⑤ 底部金屬背電極 (+)', opacity=0.88))
-    fig.add_trace(make_3d_box(-0.15, 0, 0.25, 0.75, 0.50, 0.11, '#1E3A8A', '④ P 型矽晶圓層 (富含電洞 h⁺)', opacity=0.38))
-    fig.add_trace(make_3d_box(-0.15, 0, 0.45, 0.75, 0.50, 0.07, '#F59E0B', '③ P-N 接面內建電場區', opacity=0.32))
-    fig.add_trace(make_3d_box(-0.15, 0, 0.63, 0.75, 0.50, 0.09, '#0284C7', '② N 型矽晶圓層 (富含電子 e⁻)', opacity=0.38))
-    for idx_g, gx in enumerate([-0.65, -0.32, 0.01, 0.35]):
+    # 【關鍵修正 3】將晶圓盒中心移至 X = -0.35，寬度縮小為 dx = 0.55 (右邊緣在 X = +0.20)
+    # 垂直層次落在 Z = 0.12 ~ 0.72，底部預留充足空間，保證第 5 層絕不被切掉！
+    fig.add_trace(make_3d_box(-0.35, 0, 0.14, 0.55, 0.42, 0.03, '#64748B', '⑤ 底部金屬背電極 (+)', opacity=0.90))
+    fig.add_trace(make_3d_box(-0.35, 0, 0.28, 0.55, 0.42, 0.09, '#1E3A8A', '④ P 型矽晶圓層 (電洞 h⁺)', opacity=0.40))
+    fig.add_trace(make_3d_box(-0.35, 0, 0.44, 0.55, 0.42, 0.06, '#F59E0B', '③ P-N 接面內建電場區', opacity=0.35))
+    fig.add_trace(make_3d_box(-0.35, 0, 0.58, 0.55, 0.42, 0.07, '#0284C7', '② N 型矽晶圓層 (電子 e⁻)', opacity=0.40))
+    for idx_g, gx in enumerate([-0.75, -0.48, -0.22, 0.05]):
         fig.add_trace(make_3d_box(
-            gx, 0, 0.75, 0.03, 0.50, 0.02, '#E2E8F0',
+            gx, 0, 0.68, 0.025, 0.42, 0.02, '#E2E8F0',
             '① 頂部銀導電柵線 (-)' if idx_g == 0 else '柵線', opacity=0.95
         ))
 
-    # 右側獨立對齊的結構導引文字
+    # 【關鍵修正 4】文字起點設在 X = +0.32 (晶圓右邊緣 +0.20 之外)，並強制設定 textposition="middle right" (向右延伸，100% 零重疊！)
     fig.add_trace(go.Scatter3d(
-        x=[0.92, 0.92, 0.92, 0.92, 0.92],
+        x=[0.32, 0.32, 0.32, 0.32, 0.32],
         y=[0, 0, 0, 0, 0],
-        z=[0.75, 0.63, 0.45, 0.25, 0.07],
+        z=[0.68, 0.58, 0.44, 0.28, 0.14],
         mode='text',
+        textposition="middle right",
         text=[
             '<b>◀ ① 頂部銀柵線 (收集電子負極)</b>',
-            '<b>◀ ② N 型半導體 (電子往此衝)</b>',
+            '<b>◀ ② N 型半導體 (自由電子往此衝)</b>',
             '<b>◀ ⚡ ③ P-N 接面 (內建電場分離區)</b>',
-            '<b>◀ ④ P 型半導體 (電洞往此跑)</b>',
-            '<b>◀ ⑤ 底部金屬背板 (正極回路)</b>'
+            '<b>◀ ④ P 型半導體 (正電洞往此跑)</b>',
+            '<b>◀ ⑤ 底部金屬背電極 (正極回路)</b>'
         ],
         textfont=dict(size=12, color=['#FFFFFF', '#38BDF8', '#FDE047', '#93C5FD', '#CBD5E1']),
         showlegend=False
     ))
 
+    # 動態粒子：3 顆粒子在晶圓內部 (X = -0.62, -0.35, -0.08) 垂直運動，粒子間距拉開不撞字
     dyn_idx = len(fig.data)
     fig.add_trace(go.Scatter3d(
-        x=[-0.45, -0.15, 0.15], y=[0, 0, 0], z=[0.98, 0.45, 0.45],
+        x=[-0.62, -0.35, -0.08], y=[0, 0, 0], z=[0.88, 0.44, 0.44],
         mode='markers+text',
-        marker=dict(size=15, color=['#FFEA00', '#00E5FF', '#FF5252']),
-        text=['☀️ 光子', '🔵 e⁻ 電子↑', '🔴 h⁺ 電洞↓'],
+        marker=dict(size=14, color=['#FFEA00', '#00E5FF', '#FF5252']),
+        text=['☀️ 光子', '🔵 e⁻↑', '🔴 h⁺↓'],
         textposition="top center",
-        textfont=dict(size=12, color='#FFFFFF'),
-        name='微觀光電粒子'
+        textfont=dict(size=11, color='#FFFFFF'),
+        name='微觀光電粒子 (黃:光子 / 藍:電子 / 紅:電洞)'
     ))
 
-    # 建立多週期連續循環微觀動畫 (120 影格 = 連續循環 6 次)
+    # 建立多週期連續循環微觀動畫 (120 影格)
     frames = []
     n_steps = 20
     total_cycles = 6
@@ -286,21 +284,21 @@ def build_micro_pn_junction_3d(irradiance, panel_eff):
         t_p = (f_i % n_steps) / float(n_steps - 1)
         if t_p < 0.45:
             u = t_p / 0.45
-            z_ph = 1.02 * (1 - u) + 0.45 * u
-            xs = [-0.45, -0.15, 0.15]
+            z_ph = 0.90 * (1 - u) + 0.44 * u
+            xs = [-0.62, -0.35, -0.08]
             ys = [0.0, 0.0, 0.0]
             zs = [z_ph, z_ph, z_ph]
             cols = ['#FFEA00'] * 3
             txts = ['☀️ 光子', '☀️ 光子', '☀️ 光子']
         else:
             u = (t_p - 0.45) / 0.55
-            z_elec = 0.45 * (1 - u) + 0.77 * u
-            z_hole = 0.45 * (1 - u) + 0.08 * u
-            xs = [-0.45, -0.15, 0.15, -0.45, -0.15, 0.15]
+            z_elec = 0.44 * (1 - u) + 0.70 * u
+            z_hole = 0.44 * (1 - u) + 0.15 * u
+            xs = [-0.62, -0.35, -0.08, -0.62, -0.35, -0.08]
             ys = [0.0]*6
             zs = [z_elec]*3 + [z_hole]*3
             cols = ['#00E5FF']*3 + ['#FF5252']*3
-            txts = ['🔵 e⁻ 電子↑']*3 + ['🔴 h⁺ 電洞↓']*3
+            txts = ['🔵 e⁻↑']*3 + ['🔴 h⁺↓']*3
 
         frames.append(go.Frame(
             name=f"MicroLoop_{f_i}",
@@ -314,24 +312,27 @@ def build_micro_pn_junction_3d(irradiance, panel_eff):
 
     fig.frames = frames
     fig.update_layout(
-        title=dict(text="<b>🔬 3D 太陽能電池微觀結構解剖（☀️光子撞擊 P-N 接面 ➔ 🔵電子往上衝、🔴電洞往下跑）</b>", font=dict(size=16, color="#FFD700"), x=0.02, y=0.96),
-        height=640,
-        margin=dict(l=0, r=0, b=65, t=45), paper_bgcolor='#0E1117',
+        title=dict(text="<b>🔬 太陽能電池微觀解剖（☀️光子撞擊 ➔ 🔵電子往上衝、🔴電洞往下跑）</b>", font=dict(size=16, color="#FFD700"), x=0.02, y=0.96),
+        height=620,
+        margin=dict(l=0, r=0, b=10, t=55), paper_bgcolor='#0E1117',
         scene=dict(
-            xaxis=dict(visible=False, range=[-1.15, 1.45]),
-            yaxis=dict(visible=False, range=[-0.9, 0.9]),
-            zaxis=dict(visible=False, range=[0.0, 1.15]),
-            aspectmode='manual', aspectratio=dict(x=1.45, y=0.85, z=0.80),
-            camera=dict(eye=dict(x=0.15, y=-1.75, z=0.52), center=dict(x=0.05, y=0.0, z=0.45)),
+            xaxis=dict(visible=False, range=[-1.15, 1.55]),
+            yaxis=dict(visible=False, range=[-0.85, 0.85]),
+            zaxis=dict(visible=False, range=[0.02, 0.98]),
+            aspectmode='manual', aspectratio=dict(x=1.55, y=0.80, z=0.75),
+            # 調低攝影機 center.z 至 0.35，讓整顆晶圓穩穩落在畫面正中央！
+            camera=dict(eye=dict(x=0.05, y=-1.65, z=0.45), center=dict(x=0.10, y=0.0, z=0.35)),
             bgcolor='#0E1117'
         ),
-        legend=dict(orientation="h", yanchor="top", y=0.93, xanchor="left", x=0.02, font=dict(color="white", size=11), bgcolor="rgba(15, 23, 42, 0.75)"),
+        legend=dict(orientation="h", yanchor="top", y=0.91, xanchor="left", x=0.02, font=dict(color="white", size=11), bgcolor="rgba(15, 23, 42, 0.75)"),
+        # 同樣將播放按鈕移至畫面「右上角 (x=0.98, y=0.98)」，完全不擋底部晶圓！
         updatemenus=[dict(
-            type="buttons", showactive=False, x=0.02, y=0.02, xanchor="left", yanchor="bottom", direction="left",
-            pad=dict(r=10, t=5), bgcolor="#1E293B", font=dict(color="#FFFFFF", size=14),
+            type="buttons", showactive=False,
+            x=0.98, y=0.98, xanchor="right", yanchor="top", direction="left",
+            pad=dict(r=5, t=0), bgcolor="#2563EB", font=dict(color="#FFFFFF", size=13),
             buttons=[
                 dict(
-                    label="🔄 循環播放「光子敲出電子」動畫",
+                    label="🔄 點此循環播放微觀動畫",
                     method="animate",
                     args=[None, dict(frame=dict(duration=95, redraw=True), transition=dict(duration=0), fromcurrent=False, mode="immediate")]
                 ),
@@ -365,14 +366,14 @@ with col_ctrl:
     if "宏觀尺度" in scene_mode:
         st.info(
             "💡 **【視角導讀：🧍 案場工程師視角（由南向北仰望天空與太陽能板）】**\n\n"
-            "* **👀 你會看到什麼**：你正站在案場南側走道向北與高空仰望！高掛的金色太陽正將光子灑向眼前的深藍色面板陣列，右側依序連接**橘色逆變器**、**綠色升壓變壓器**與**銀色台電高壓電塔**。\n"
-            "* **🎯 操作體驗**：點擊右圖左下角 **「🔄 循環播放」**，觀察 **☀️黃色光子 ➔ 🔵藍色DC直流電 ➔ 🟢綠色AC交流電 ➔ ⚡高壓電網** 源源不絕的能量轉換！"
+            "* **👀 你會看到什麼**：站在案場南側向北仰望，左上方高掛的金色太陽將光子灑向深藍色面板陣列，往右依序連接**橘色逆變器**、**綠色升壓變壓器**與**銀色台電高壓電塔**。\n"
+            "* **🎯 操作體驗**：點擊右圖**右上角藍色按鈕「🔄 點此循環播放能量流」**，觀察 **☀️黃色光子 ➔ 🔵藍色DC直流電 ➔ 🟢綠色AC交流電 ➔ ⚡高壓電網** 源源不絕的能量轉換！"
         )
     else:
         st.info(
             "🔬 **【微觀解剖導讀：太陽能板內部 P-N 接面「光敲出電」】**\n\n"
             "* **👀 你會看到什麼**：把矽晶圓放大一萬倍的 3D 分層結構！上方是 **N 型矽（淺藍）**，下方是 **P 型矽（深藍）**，中間夾著黃色的 **P-N 接面內建電場**。\n"
-            "* **🎯 操作體驗**：點擊右圖左下角 **「🔄 循環播放」**，觀察金色光子連續撞擊 P-N 接面，激發出藍色自由電子往上衝、紅色電洞往下跑的循環過程！"
+            "* **🎯 操作體驗**：點擊右圖**右上角藍色按鈕「🔄 點此循環播放微觀動畫」**，觀察金色光子連續撞擊 P-N 接面，激發出藍色自由電子往上衝、紅色電洞往下跑的循環過程！"
         )
 
     st.markdown("#### ☀️ 2. 調整日照與電廠設備效率")
@@ -392,7 +393,7 @@ with col_stage:
         fig_micro = build_micro_pn_junction_3d(irradiance, panel_eff)
         st.plotly_chart(fig_micro, use_container_width=True, key="micro_pn_stage")
 
-    st.caption("🎬 **互動指南**：點擊上方 3D 舞台左下角的 **「🔄 循環播放」** 即可觀看連續能量流動畫；隨時可用滑鼠左鍵按住拖曳微調視角、滾輪縮放！")
+    st.caption("🎬 **互動指南**：點擊上方 3D 舞台**右上角的藍色按鈕「🔄 點此循環播放」**即可觀看連續能量流動畫；隨時可用滑鼠左鍵按住拖曳微調視角、滾輪縮放！")
 
 # ==================== 下方：電廠能量轉換鏈儀表板 + 三大核心知識導讀 ====================
 st.markdown("---")
