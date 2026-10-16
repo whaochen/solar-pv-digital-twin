@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="第 1 章：太陽的四季華爾滋", page_icon="☀️", layout="wide")
 
-# 緊湊化版面與高亮度數據卡 CSS（確保亮色/暗色主題下數字都極致明亮清晰，且上下同框）
+# 緊湊化版面與高亮度數據卡 CSS
 st.markdown("""
 <style>
     .block-container { padding-top: 1.2rem !important; padding-bottom: 1rem !important; }
@@ -27,7 +27,6 @@ st.markdown("""
     .bright-val-gold { color: #FFD700 !important; font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
     .bright-val-cyan { color: #00E5FF !important; font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
     .bright-val-green { color: #00E676 !important; font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
-    .bright-val-orange { color: #FF9100 !important; font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
     .bright-sub { color: #94A3B8 !important; font-size: 0.82rem; margin-top: 2px; }
 </style>
 """, unsafe_allow_html=True)
@@ -249,7 +248,7 @@ def build_smooth_3d_celestial_figure(day_n, phi_deg, hour_t, compare_seasons, ca
 
     fig.frames = frames
 
-    # 設定攝影機視角 (拉近並置中天球，不留過多黑邊)
+    # 設定攝影機視角
     if "東升西落全景視角" in camera_mode:
         cam_eye = dict(x=0.0, y=1.65, z=0.45)
         cam_center = dict(x=0.0, y=-0.05, z=0.22)
@@ -258,7 +257,7 @@ def build_smooth_3d_celestial_figure(day_n, phi_deg, hour_t, compare_seasons, ca
         cam_center = dict(x=0.0, y=0.0, z=0.0)
     elif "案場工程師視角" in camera_mode:
         cam_eye = dict(x=0.0, y=-1.60, z=0.38)
-        cam_center = dict(x=0.0, y=0.1, z=0.25)
+        cam_center = dict(x=0.0, y=0.1, z=0.28)
     else:
         cam_eye = dict(x=1.25, y=-1.15, z=0.78)
         cam_center = dict(x=0.0, y=0.0, z=0.18)
@@ -271,14 +270,13 @@ def build_smooth_3d_celestial_figure(day_n, phi_deg, hour_t, compare_seasons, ca
             font=dict(size=16, color="#FFD700" if is_day else "#E2E8F0"),
             x=0.02, y=0.96
         ),
-        # 高度設為 430px，讓下方的「高亮度數據 + 公式導讀」直接浮現在同一螢幕畫面中！
         height=430,
         margin=dict(l=0, r=0, b=55, t=40),
         paper_bgcolor='#0E1117',
         scene=dict(
             xaxis=dict(visible=False, range=[-1.25, 1.25]),
             yaxis=dict(visible=False, range=[-1.25, 1.25]),
-            zaxis=dict(visible=False, range=[-0.02, 1.15]),
+            zaxis=dict(visible=False, range=[-0.04, 1.20]),
             aspectmode='manual',
             aspectratio=dict(x=1, y=1, z=0.62),
             camera=dict(eye=cam_eye, center=cam_center),
@@ -346,7 +344,7 @@ with col_ctrl:
     else:
         st.caption("💡 **視角導讀**：站在案場地面向北仰望，觀察夏至正午太陽直逼頭頂（近 90°）與冬至偏南的差異。")
 
-    st.markdown("##### 🎡 2. 季節與地理緯度 (拉動即刻連動下方公式！)")
+    st.markdown("##### 🎡 2. 季節與地理緯度")
     c_s1, c_s2 = st.columns([1.05, 1.0])
     with c_s1:
         season_preset = st.selectbox(
@@ -372,9 +370,7 @@ with col_ctrl:
     with c_l2:
         phi_deg = st.slider("🧭 緯度 φ (°N)", -66.5, 70.0, lat_map[lat_preset], step=0.5)
 
-    c_t1, c_t2 = st.columns([1.3, 1.0])
-    with c_t1:
-       # 建立 05:00 到 19:15（間距 15 分鐘）的時間選項列表
+    st.markdown("##### ⏰ 4. 定格計算時刻 (連動下方數據)")
     time_options = []
     for h in range(5, 20):
         for m in [0, 15, 30, 45]:
@@ -382,14 +378,11 @@ with col_ctrl:
                 continue
             time_options.append(f"{h:02d}:{m:02d}")
             
-    selected_time_str = st.selectbox("選擇或拉動觀察時刻", time_options, index=22) # 預設約 10:30
+    selected_time_str = st.selectbox("選擇或拉動觀察時刻", time_options, index=22)
     sh, sm = map(int, selected_time_str.split(":"))
     hour_t = float(sh) + float(sm) / 60.0
     
     compare_seasons = st.checkbox("🌈 三季軌道", value=True)
-    with c_t2:
-        st.write("")
-        compare_seasons = st.checkbox("🌈 三季軌道", value=True)
 
 with col_stage:
     fig, delta_deg, ws_deg, daylight_hr, sunrise, sunset, alpha_s_deg, cur_z = build_smooth_3d_celestial_figure(
@@ -397,7 +390,7 @@ with col_stage:
     )
     st.plotly_chart(fig, use_container_width=True, key="celestial_3d_stage")
 
-# ==================== 下半部：高亮度即時數據 ＋ 物理公式導讀（正下方一體化連動） ====================
+# ==================== 下半部：高亮度即時數據卡 ＋ 物理公式導讀（正下方一體化連動） ====================
 sunrise_str = f"{int(sunrise):02d}:{int((sunrise%1)*60):02d}"
 sunset_str = f"{int(sunset):02d}:{int((sunset%1)*60):02d}"
 omega_now = 15.0 * (hour_t - 12.0)
