@@ -106,8 +106,9 @@ def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi
 
     # 大氣消光模型：早晚太陽仰角低時，大氣質量 (Air Mass) 大，DNI 自然衰減
     air_mass_factor = np.where(sz > 0.02, np.power(np.clip(sz, 0.02, 1.0), 0.35), 0.0)
-    cur_dni = float(dni_peak * air_mass_factor[0]) if is_day else 0.0
-    cur_dhi = float(dhi_base * (0.4 + 0.6 * max(0.0, sz))) if is_day else 0.0
+    # 確保 air_mass_factor 陣列安全且有值
+    am_val = float(air_mass_factor[0]) if (isinstance(air_mass_factor, np.ndarray) and air_mass_factor.size > 0) else 0.0
+    cur_dni = float(dni_peak * am_val) if is_day else 0.0
 
     fix_res, ax1_res, ax2_res = calc_tracker_normals_and_poa(
         np.array([sx]), np.array([sy]), np.array([sz]), fixed_tilt_deg, cur_dni, cur_dhi
