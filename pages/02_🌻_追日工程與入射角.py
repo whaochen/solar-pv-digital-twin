@@ -445,11 +445,19 @@ with col_ctrl:
     day_n = {"☀️ 夏至 (6/21)": 172, "🌸 春/秋分": 80, "❄️ 冬至 (12/21)": 355}[season_opt]
 
     st.markdown("##### 🔧 3. 面板傾角與定格時刻 (連動下方公式)")
-    c_p1, c_p2 = st.columns(2)
-    with c_p1:
-        fixed_tilt_deg = st.slider("🟦 固定傾角 β (°)", 0.0, 45.0, 20.0, step=2.5)
-    with c_p2:
-        hour_t = st.slider("⏰ 定格時刻 t (hr)", 6.0, 18.0, 7.5, step=0.25)
+    fixed_tilt_deg = st.slider("🟦 固定傾角 β (°)", 0.0, 45.0, 20.0, step=2.5)
+    
+    # 建立 06:00 到 18:00（間距 15 分鐘）的時間選項列表
+    tracker_time_options = []
+    for h in range(6, 19):
+        for m in [0, 15, 30, 45]:
+            if h == 18 and m > 0:
+                continue
+            tracker_time_options.append(f"{h:02d}:{m:02d}")
+            
+    selected_t2_str = st.selectbox("⏰ 定格觀察時刻 (推薦 07:30 比較！)", tracker_time_options, index=6) # 預設 07:30
+    th, tm = map(int, selected_t2_str.split(":"))
+    hour_t = float(th) + float(tm) / 60.0
     phi_deg = 23.15
 
 with col_stage:
