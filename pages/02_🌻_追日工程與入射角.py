@@ -99,16 +99,15 @@ def make_panel_mesh_vertices(center_x, center_y, center_z, nx, ny, nz, w=0.22, h
 
 def build_3d_tracker_arena(day_n, phi_deg, hour_t, fixed_tilt_deg, dni_peak, dhi_base, camera_mode):
     """建構無閃爍 WebGL 3D 追日同場競技舞台 (左：固定式、中：單軸、右：雙軸)"""
-    # 單一時刻計算
-    sx_arr, sy_arr, sz_arr, delta_deg = calc_sun_vector(day_n, np.array([hour_t]), phi_deg)
-    sx, sy, sz = float(sx_arr[0]), float(sy_arr[0]), float(sz_arr[0])
+    # 單一時刻計算 (強制確保輸入為陣列)
+    sx_arr, sy_arr, sz_arr, delta_deg = calc_sun_vector(day_n, np.atleast_1d(hour_t), phi_deg)
+    sx, sy, sz = float(sx_arr.flat[0]), float(sy_arr.flat[0]), float(sz_arr.flat[0])
     is_day = sz > 0.02
 
-    # 大氣消光模型：早晚太陽仰角低時，大氣質量 (Air Mass) 大，DNI 自然衰減
-    air_mass_factor = np.where(sz > 0.02, np.power(np.clip(sz, 0.02, 1.0), 0.35), 0.0)
-    # 確保 air_mass_factor 陣列安全且有值
-    am_val = float(air_mass_factor[0]) if (isinstance(air_mass_factor, np.ndarray) and air_mass_factor.size > 0) else 0.0
+    # 大氣消光模型 (純量安全計算)
+    am_val = float(np.power(np.clip(sz, 0.02, 1.0), 0.35)) if is_day else 0.0
     cur_dni = float(dni_peak * am_val) if is_day else 0.0
+    cur_dhi = float(dhi_base * (0.4 + 0.6 * max(0.0, sz))) if is_day else 0.0
 
     fix_res, ax1_res, ax2_res = calc_tracker_normals_and_poa(
         np.array([sx]), np.array([sy]), np.array([sz]), fixed_tilt_deg, cur_dni, cur_dhi
