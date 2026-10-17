@@ -56,7 +56,7 @@ st.info(
     "🛡️ **【研究設計架構】** 本章採用**「三段式獨立展開架構」**：\n"
     "* **【第一節】台灣五大光電案場空間地圖 ＆ 第 1、2 章太陽入射角幾何聯動**\n"
     "* **【第二節】後台資料庫「錨定起算日（自 2026-08-18 起）」設定與健康度檢核**\n"
-    "* **【第三節】全寬度獨立三尺度監測面板（當天逐時 ／ 最近一週 ／ 指定區段放大鏡）**"
+    "* **【第三節】全寬度獨立三尺度監測面板（當天逐時 ／ 最近一週 ／ 指定區段放大鏡，每張通道圖皆配備獨立專屬圖例！）**"
 )
 
 TAIWAN_SOLAR_SITES = {
@@ -77,8 +77,8 @@ TAIWAN_SOLAR_SITES = {
     "🇹🇼 3. 雲林麥寮農電共生案場 (23.78°N, 120.25°E)": {
         "short_name": "雲林麥寮案場", "lat": 23.78, "lon": 120.25, "opt_tilt": 20.0,
         "type": "農地高架結合農業溫室型 (Agrivoltaics)",
-        "capacity": "約 50 MW ～ 100 MW 分分散式聚落",
-        "climate_feature": "位於濁水溪出海口南側，秋冬受東北季風揚塵與工業區氣膠雙重影響。",
+        "capacity": "約 50 MW ～ 100 MW 分散式聚落",
+        "climate_feature": "位於濁水溪出海口南側，秋冬受東北季風揚塵（沙塵暴）與工業區氣膠雙重影響。",
         "key_challenge": "🌫️ **秋冬 PM2.5 與乾季嚴重積塵（Soiling）**：10 月至隔年 3 月少雨乾燥，懸浮微粒沉積形成厚重灰塵層。"
     },
     "🇹🇼 4. 屏東林邊地層下陷光電專區 (22.43°N, 120.51°E)": {
@@ -335,122 +335,136 @@ def build_ch1_ch2_angle_chart(df_day, site_short_name, panel_tilt_deg, target_da
             text=f"<b>📐 {site_short_name} ({target_date}) —— 第 1 章太陽仰角 αs vs. 第 2 章面板入射角 θi 與餘弦受光率</b>",
             font=dict(size=14, color="#0F172A"), x=0.01, y=0.96
         ),
-        height=390,
-        margin=dict(l=55, r=55, t=80, b=35),
+        height=340,
+        margin=dict(l=60, r=60, t=75, b=30),
         paper_bgcolor="#FFFFFF", plot_bgcolor="#F8FAFC",
         font=dict(color="#0F172A", size=11.5),
         hovermode="x unified",
         hoverlabel=dict(bgcolor="#0F172A", font_size=12, font_color="#F8FAFC", namelength=-1),
-        legend=dict(orientation="h", yanchor="bottom", y=1.03, xanchor="left", x=0.0, bgcolor="rgba(241,245,249,0.95)")
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0.0, bgcolor="rgba(241,245,249,0.95)", bordercolor="#CBD5E1", borderwidth=1)
     )
     return fig_ang
 
-def plot_clear_three_channel_chart(df_sub, view_title, show_markers=False):
+
+# ==================== 【升級重點】將三張通道圖拆開獨立繪製，各自擁有專屬圖例！ ====================
+def render_separated_three_channel_charts(df_sub, view_title, key_prefix, show_markers=False):
+    """
+    將通道 1、通道 2、通道 3 拆分為三張獨立的 Plotly 圖表，
+    讓每張圖的頂部只顯示屬於自己的 3~4 個圖例，視覺清爽、對照直覺！
+    """
     mode_str = "lines+markers" if show_markers else "lines"
-    marker_cfg = dict(size=4) if show_markers else dict(size=1)
+    marker_cfg = dict(size=5) if show_markers else dict(size=1)
 
-    fig = make_subplots(
-        rows=3, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.09,
-        subplot_titles=(
-            f"<b>☀️ 通道 1：太陽輻照與幾何捕捉 —— 斜面有效輻照度 POA vs. 水平總日射 GHI vs. 散射光 DHI ({view_title})</b>",
-            "<b>🌡️ 通道 2：熱力學溫升 —— 測站氣溫 Tamb vs. Faiman 面板溫度 Tcell (左軸 °C) & 案場風速 v (右軸 m/s)</b>",
-            "<b>🌫️ 通道 3：環境積塵與洗塵 —— PM2.5 濃度 (左軸) vs. 降雨量 (右軸藍柱) & 連續無雨時數 (右軸橘線)</b>"
-        ),
-        specs=[[{"secondary_y": True}], [{"secondary_y": True}], [{"secondary_y": True}]]
-    )
-
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["POA_Wm2"], mode=mode_str, marker=marker_cfg,
-                   name="🎯 POA 面板斜面有效輻照 (W/m²)", line=dict(color="#DC2626", width=2.5),
-                   hovertemplate="<b>🎯 POA 斜面輻照度</b>：%{y:.0f} W/m²<extra></extra>"),
-        row=1, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["GHI_Wm2"], mode=mode_str, marker=marker_cfg,
-                   name="☀️ GHI 水平總日射 (W/m²)", line=dict(color="#D97706", width=2.0),
-                   fill="tozeroy", fillcolor="rgba(245, 158, 11, 0.14)",
-                   hovertemplate="<b>☀️ GHI 水平總日射</b>：%{y:.0f} W/m²<extra></extra>"),
-        row=1, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["DHI_Wm2"], mode="lines",
-                   name="☁️ DHI 天空散射光 (W/m²)", line=dict(color="#2563EB", width=1.8),
-                   hovertemplate="<b>☁️ DHI 天空散射光</b>：%{y:.0f} W/m²<extra></extra>"),
-        row=1, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["Incidence_Angle_deg"], mode="lines",
-                   name="📐 太陽入射角 θi (°)", line=dict(color="#059669", width=1.5, dash="dot"),
-                   hovertemplate="<b>📐 太陽入射角 θi</b>：%{y:.1f}°<extra></extra>"),
-        row=1, col=1, secondary_y=True
-    )
-
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["T_cell_Faiman_C"], mode=mode_str, marker=marker_cfg,
-                   name="🔥 Faiman 面板溫度 (°C)", line=dict(color="#DC2626", width=2.4),
-                   hovertemplate="<b>🔥 Faiman 面板工作溫度</b>：%{y:.1f} °C<extra></extra>"),
-        row=2, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["T_amb_C"], mode=mode_str, marker=marker_cfg,
-                   name="🌡️ 環境氣溫 Tamb (°C)", line=dict(color="#059669", width=2.0),
-                   hovertemplate="<b>🌡️ 環境氣溫 Tamb</b>：%{y:.1f} °C<extra></extra>"),
-        row=2, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["Wind_ms"], mode="lines",
-                   name="💨 案場風速 v (m/s)", line=dict(color="#0284C7", width=1.5, dash="dash"),
-                   hovertemplate="<b>💨 案場風速 v</b>：%{y:.1f} m/s<extra></extra>"),
-        row=2, col=1, secondary_y=True
-    )
-
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["PM25_ugm3"], mode=mode_str, marker=marker_cfg,
-                   name="🌫️ PM2.5 細懸浮微粒 (μg/m³)", line=dict(color="#7C3AED", width=2.2),
-                   fill="tozeroy", fillcolor="rgba(124, 58, 237, 0.12)",
-                   hovertemplate="<b>🌫️ PM2.5 濃度</b>：%{y:.1f} μg/m³<extra></extra>"),
-        row=3, col=1, secondary_y=False
-    )
-    fig.add_trace(
-        go.Bar(x=df_sub["timestamp"], y=df_sub["Rain_mm"], name="🌧️ 降雨量 (mm/hr)",
-               marker_color="#0EA5E9", opacity=0.85,
-               hovertemplate="<b>🌧️ 每小時降雨量</b>：%{y:.2f} mm<extra></extra>"),
-        row=3, col=1, secondary_y=True
-    )
-    fig.add_trace(
-        go.Scatter(x=df_sub["timestamp"], y=df_sub["Dry_Hours_Since_Rain"], mode="lines",
-                   name="⏳ 連續無雨時數 (hr)", line=dict(color="#D97706", width=1.8, dash="dot"),
-                   hovertemplate="<b>⏳ 累積無雨時數</b>：%{y:.0f} 小時<extra></extra>"),
-        row=3, col=1, secondary_y=True
-    )
-
-    fig.update_yaxes(title_text="<b>輻照度 (W/m²)</b>", title_font=dict(color="#B45309", size=11), gridcolor="#E2E8F0", row=1, col=1, secondary_y=False)
-    fig.update_yaxes(title_text="<b>入射角 (°)</b>", title_font=dict(color="#059669", size=10), range=[0, 95], showgrid=False, row=1, col=1, secondary_y=True)
-    fig.update_yaxes(title_text="<b>溫度 (°C)</b>", title_font=dict(color="#DC2626", size=11), gridcolor="#E2E8F0", row=2, col=1, secondary_y=False)
-    fig.update_yaxes(title_text="<b>風速 (m/s)</b>", title_font=dict(color="#0284C7", size=10), showgrid=False, row=2, col=1, secondary_y=True)
-    fig.update_yaxes(title_text="<b>PM2.5 (μg/m³)</b>", title_font=dict(color="#7C3AED", size=11), gridcolor="#E2E8F0", row=3, col=1, secondary_y=False)
-    fig.update_yaxes(title_text="<b>雨量/無雨</b>", title_font=dict(color="#0284C7", size=10), showgrid=False, row=3, col=1, secondary_y=True)
-
-    for r_i in [1, 2, 3]:
-        fig.update_xaxes(gridcolor="#E2E8F0", tickfont=dict(color="#1E293B", size=11), hoverformat="%Y-%m-%d %H:%M", row=r_i, col=1)
-
-    fig.update_layout(
-        height=680,
-        margin=dict(l=65, r=65, t=100, b=40),
+    common_layout = dict(
+        height=275,
+        margin=dict(l=60, r=60, t=75, b=30),
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#F8FAFC",
         font=dict(color="#0F172A", size=11.5),
         hovermode="x unified",
         hoverlabel=dict(bgcolor="#0F172A", font_size=12, font_color="#F8FAFC", namelength=-1),
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.07, xanchor="left", x=0.0,
+            orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0.0,
             bgcolor="rgba(241, 245, 249, 0.96)", bordercolor="#CBD5E1", borderwidth=1,
-            font=dict(color="#0F172A", size=11)
+            font=dict(color="#0F172A", size=11.5)
         )
     )
-    return fig
+
+    # -------------------- 獨立圖表 1：通道 1（太陽輻照與幾何捕捉，專屬 4 個圖例） --------------------
+    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
+    fig1.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["POA_Wm2"], mode=mode_str, marker=marker_cfg,
+                   name="🎯 POA 面板斜面有效輻照 (W/m²)", line=dict(color="#E11D48", width=2.6),
+                   hovertemplate="<b>🎯 POA 斜面輻照度</b>：%{y:.0f} W/m²<extra></extra>"),
+        secondary_y=False
+    )
+    fig1.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["GHI_Wm2"], mode=mode_str, marker=marker_cfg,
+                   name="☀️ GHI 水平總日射 (W/m²)", line=dict(color="#D97706", width=2.2),
+                   fill="tozeroy", fillcolor="rgba(245, 158, 11, 0.14)",
+                   hovertemplate="<b>☀️ GHI 水平總日射</b>：%{y:.0f} W/m²<extra></extra>"),
+        secondary_y=False
+    )
+    fig1.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["DHI_Wm2"], mode="lines",
+                   name="☁️ DHI 天空散射光 (W/m²)", line=dict(color="#2563EB", width=1.9),
+                   hovertemplate="<b>☁️ DHI 天空散射光</b>：%{y:.0f} W/m²<extra></extra>"),
+        secondary_y=False
+    )
+    fig1.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["Incidence_Angle_deg"], mode="lines",
+                   name="📐 太陽入射角 θi (°)", line=dict(color="#059669", width=1.6, dash="dot"),
+                   hovertemplate="<b>📐 太陽入射角 θi</b>：%{y:.1f}°<extra></extra>"),
+        secondary_y=True
+    )
+    fig1.update_yaxes(title_text="<b>輻照度 (W/m²)</b>", title_font=dict(color="#B45309", size=11.5), gridcolor="#E2E8F0", secondary_y=False)
+    fig1.update_yaxes(title_text="<b>入射角 θi (°)</b>", title_font=dict(color="#059669", size=11), range=[0, 95], showgrid=False, secondary_y=True)
+    fig1.update_xaxes(gridcolor="#E2E8F0", tickfont=dict(color="#1E293B", size=11), hoverformat="%Y-%m-%d %H:%M")
+    fig1.update_layout(
+        title=dict(text=f"<b>☀️ 通道 1：太陽輻照與幾何捕捉 —— 斜面有效輻照度 POA vs. 水平總日射 GHI vs. 散射光 DHI ({view_title})</b>", font=dict(size=14, color="#0F172A"), x=0.01, y=0.96),
+        **common_layout
+    )
+    st.plotly_chart(fig1, use_container_width=True, key=f"{key_prefix}_ch1")
+
+    # -------------------- 獨立圖表 2：通道 2（熱力學溫升與風速，專屬 3 個圖例） --------------------
+    fig2 = make_subplots(specs=[[{"secondary_y": True}]])
+    fig2.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["T_cell_Faiman_C"], mode=mode_str, marker=marker_cfg,
+                   name="🔥 Faiman 面板工作溫度 (°C)", line=dict(color="#DC2626", width=2.6),
+                   hovertemplate="<b>🔥 Faiman 面板工作溫度</b>：%{y:.1f} °C<extra></extra>"),
+        secondary_y=False
+    )
+    fig2.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["T_amb_C"], mode=mode_str, marker=marker_cfg,
+                   name="🌡️ 測站環境氣溫 Tamb (°C)", line=dict(color="#059669", width=2.2),
+                   hovertemplate="<b>🌡️ 環境氣溫 Tamb</b>：%{y:.1f} °C<extra></extra>"),
+        secondary_y=False
+    )
+    fig2.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["Wind_ms"], mode="lines",
+                   name="💨 案場風速 v (m/s)", line=dict(color="#0284C7", width=1.7, dash="dash"),
+                   hovertemplate="<b>💨 案場風速 v</b>：%{y:.1f} m/s<extra></extra>"),
+        secondary_y=True
+    )
+    fig2.update_yaxes(title_text="<b>溫度 (°C)</b>", title_font=dict(color="#DC2626", size=11.5), gridcolor="#E2E8F0", secondary_y=False)
+    fig2.update_yaxes(title_text="<b>風速 (m/s)</b>", title_font=dict(color="#0284C7", size=11), showgrid=False, secondary_y=True)
+    fig2.update_xaxes(gridcolor="#E2E8F0", tickfont=dict(color="#1E293B", size=11), hoverformat="%Y-%m-%d %H:%M")
+    fig2.update_layout(
+        title=dict(text=f"<b>🌡️ 通道 2：熱力學溫升 —— 測站氣溫 Tamb vs. Faiman 面板溫度 Tcell (左軸 °C) & 案場風速 v (右軸 m/s) ({view_title})</b>", font=dict(size=14, color="#0F172A"), x=0.01, y=0.96),
+        **common_layout
+    )
+    st.plotly_chart(fig2, use_container_width=True, key=f"{key_prefix}_ch2")
+
+    # -------------------- 獨立圖表 3：通道 3（PM2.5 積塵、降雨洗塵與無雨累積，專屬 3 個圖例） --------------------
+    fig3 = make_subplots(specs=[[{"secondary_y": True}]])
+    fig3.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["PM25_ugm3"], mode=mode_str, marker=marker_cfg,
+                   name="🌫️ PM2.5 細懸浮微粒 (μg/m³)", line=dict(color="#7C3AED", width=2.4),
+                   fill="tozeroy", fillcolor="rgba(124, 58, 237, 0.12)",
+                   hovertemplate="<b>🌫️ PM2.5 濃度</b>：%{y:.1f} μg/m³<extra></extra>"),
+        secondary_y=False
+    )
+    fig3.add_trace(
+        go.Bar(x=df_sub["timestamp"], y=df_sub["Rain_mm"], name="🌧️ 降雨量 (mm/hr)",
+               marker_color="#0EA5E9", opacity=0.85,
+               hovertemplate="<b>🌧️ 每小時降雨量</b>：%{y:.2f} mm<extra></extra>"),
+        secondary_y=True
+    )
+    fig3.add_trace(
+        go.Scatter(x=df_sub["timestamp"], y=df_sub["Dry_Hours_Since_Rain"], mode="lines",
+                   name="⏳ 連續無雨時數 (hr)", line=dict(color="#D97706", width=2.0, dash="dot"),
+                   hovertemplate="<b>⏳ 累積無雨時數</b>：%{y:.0f} 小時<extra></extra>"),
+        secondary_y=True
+    )
+    fig3.update_yaxes(title_text="<b>PM2.5 (μg/m³)</b>", title_font=dict(color="#7C3AED", size=11.5), gridcolor="#E2E8F0", secondary_y=False)
+    fig3.update_yaxes(title_text="<b>雨量(mm) / 無雨(hr)</b>", title_font=dict(color="#0284C7", size=11), showgrid=False, secondary_y=True)
+    fig3.update_xaxes(gridcolor="#E2E8F0", tickfont=dict(color="#1E293B", size=11), hoverformat="%Y-%m-%d %H:%M")
+    fig3.update_layout(
+        title=dict(text=f"<b>🌫️ 通道 3：環境積塵與洗塵 —— PM2.5 濃度 (左軸) vs. 降雨量 (右軸藍柱) & 連續無雨時數 (右軸橘線) ({view_title})</b>", font=dict(size=14, color="#0F172A"), x=0.01, y=0.96),
+        **common_layout
+    )
+    st.plotly_chart(fig3, use_container_width=True, key=f"{key_prefix}_ch3")
+
 
 # ==================== 第一節：案場選擇、地圖與幾何聯動 ====================
 st.markdown('<div class="section-banner">📍 第一節：選擇台灣代表性光電案場、空間地圖與太陽入射角幾何（連動第 1、2 章理論）</div>', unsafe_allow_html=True)
@@ -539,8 +553,8 @@ with sec2_c3:
     else:
         st.error(f"❌ 連線異常：{audit['error_msg']}")
 
-# ==================== 第三節：獨立三尺度監測面板 ====================
-st.markdown('<div class="section-banner">🔭 第三節：選擇時間檢視尺度（100% 全螢幕寬度獨立繪製：當天逐時 ／ 最近一週 ／ 指定區段）</div>', unsafe_allow_html=True)
+# ==================== 第三節：獨立三尺度監測面板（每張圖配備專屬圖例） ====================
+st.markdown('<div class="section-banner">🔭 第三節：選擇時間檢視尺度（三通道各自擁有獨立專屬圖例，不再混雜！）</div>', unsafe_allow_html=True)
 
 if pipeline_healthy and not df_live.empty:
     tab_day, tab_week, tab_custom = st.tabs([
@@ -571,8 +585,7 @@ if pipeline_healthy and not df_live.empty:
             fig_ang_day = build_ch1_ch2_angle_chart(df_day, site_info["short_name"], panel_tilt_deg, target_single_date)
             st.plotly_chart(fig_ang_day, use_container_width=True, key="chart_day_angles")
 
-            fig_d = plot_clear_three_channel_chart(df_day, f"單日逐時：{target_single_date}", show_markers=True)
-            st.plotly_chart(fig_d, use_container_width=True, key="chart_single_day")
+            render_separated_three_channel_charts(df_day, f"單日逐時：{target_single_date}", "day_view", show_markers=True)
 
     with tab_week:
         cutoff_7d = df_live["timestamp"].max() - pd.Timedelta(days=7)
@@ -583,8 +596,7 @@ if pipeline_healthy and not df_live.empty:
             f"最高斜面輻照 **POA = {df_week['POA_Wm2'].max():.0f} W/m²** ｜ "
             f"最高面板溫 **{df_week['T_cell_Faiman_C'].max():.1f} °C** ｜ 累積雨量 **{df_week['Rain_mm'].sum():.1f} mm**"
         )
-        fig_w = plot_clear_three_channel_chart(df_week, "最近 7 天趨勢", show_markers=False)
-        st.plotly_chart(fig_w, use_container_width=True, key="chart_one_week")
+        render_separated_three_channel_charts(df_week, "最近 7 天趨勢", "week_view", show_markers=False)
 
     with tab_custom:
         default_c_start = max(min_avail_date, date(2026, 9, 25)) if min_avail_date <= date(2026, 9, 25) else min_avail_date
@@ -617,8 +629,7 @@ if pipeline_healthy and not df_live.empty:
 
         if not df_custom.empty:
             use_mk = len(df_custom) <= 96
-            fig_c = plot_clear_three_channel_chart(df_custom, f"指定區段：{custom_start} ～ {custom_end}", show_markers=use_mk)
-            st.plotly_chart(fig_c, use_container_width=True, key="chart_custom_range")
+            render_separated_three_channel_charts(df_custom, f"指定區段：{custom_start} ～ {custom_end}", "custom_view", show_markers=use_mk)
 
 # ==================== 第四節：物理定義與來源總表 ====================
 st.markdown('<div class="section-banner">📖 第四節：監測數值物理定義、跨章節公式整合與真實資料來源總表</div>', unsafe_allow_html=True)
