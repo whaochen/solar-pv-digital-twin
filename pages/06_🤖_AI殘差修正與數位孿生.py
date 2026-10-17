@@ -38,6 +38,7 @@ st.markdown("""
     .bright-val-green { color: #00E676 !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
     .bright-val-cyan { color: #00E5FF !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
     .bright-val-gold { color: #FFD700 !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
+    .bright-val-orange { color: #FB923C !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
     .bright-sub { color: #94A3B8 !important; font-size: 0.83rem; margin-top: 4px; }
     .section-banner {
         background: linear-gradient(90deg, #1E3A8A, #1E293B);
@@ -50,15 +51,25 @@ st.markdown("""
         margin-bottom: 14px;
         border-left: 6px solid #FFD700;
     }
+    .concept-guide-box {
+        background-color: #F8FAFC;
+        border-left: 5px solid #7C3AED;
+        border-radius: 8px;
+        padding: 14px 18px;
+        color: #0F172A;
+        font-size: 0.93rem;
+        line-height: 1.6;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 15px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("### 第六章：【智慧賦能】灰箱混合架構：AI 機器學習殘差修正與盲測驗證工作台")
 st.info(
-    "🌟 **【學術研究架構宣告】** 本章實作**「灰箱混合數位孿生（Grey-Box Hybrid Digital Twin）」**：\n"
-    "1. **物理基準值 ($P_{\text{physics}}$)**：運用第 1～4 章物理引擎（斜面輻照 POA ➔ Faiman 溫度 ➔ 理想轉換效率）算出理論發電量。\n"
-    "2. **AI 殘差學習 ($\Delta P_{\text{residual}}$)**：利用機器學習（Random Forest）以 Open Data（`PM2.5`、`風速`、`濕度`、`無雨時數`）特徵來學習物理模型算不準的非線性環境盲區。\n"
-    "3. **嚴格時序分割（Time-Series Split）**：前 $80\%$ 歷史資料作為訓練集，後 $20\%$ 時序資料作為盲測試驗證，絕不隨機洗牌，確保科學公信力！"
+    "🌟 **【新手導讀：什麼是灰箱混合數位孿生？】**\n"
+    "前面 1～4 章的物理公式就像是**「物理課本的標準答案（白箱）」**，絕對不會違反能量守恆，但它不知道台灣有 PM2.5 灰塵與海邊鹽霧。\n"
+    "如果完全叫 AI 亂猜（黑箱），它可能會在半夜預測出發電量。因此本章採用**「灰箱混合架構」**：**讓物理公式算基礎底氣，再讓機器學習（隨機森林）專心去抓物理公式算不準的『誤差（殘差）』！**"
 )
 
 TAIWAN_SOLAR_SITES = {
@@ -202,11 +213,13 @@ with s_col1:
 with s_col2:
     panel_tilt_deg = st.slider("📐 案場面板固定傾角 β (°)", 0.0, 40.0, float(site_info["opt_tilt"]), step=1.0)
     train_ratio = st.slider("📊 時序訓練集佔比 (Time-Series Train Split)", 0.5, 0.9, 0.8, step=0.05)
+    st.caption("💡 **時序分割原則**：前 80% 時間教 AI 學會規律，後 20% 時間拿來『盲測考試』，絕不隨機抽樣作弊！")
 
 with s_col3:
-    st.markdown("##### ⚙️ XGBoost / RF 樹模型超參數")
-    n_estimators = st.slider("🌲 樹木數量 (n_estimators)", 50, 300, 100, step=50)
-    max_depth = st.slider("🌳 最大樹高 (max_depth)", 3, 10, 6, step=1)
+    st.markdown("##### ⚙️ 隨機森林 (Random Forest) 超參數設定")
+    n_estimators = st.slider("🌲 樹木專家數量 (n_estimators)", 50, 300, 100, step=50)
+    max_depth = st.slider("🌳 專家思考深度 (max_depth)", 3, 10, 6, step=1)
+    st.caption("💡 **超參數白話**：聘請幾位專家（樹數量）以及每位專家思考邏輯可以轉幾個彎（樹高）。")
 
 start_str = "2026-08-18"
 end_str = datetime.now().strftime("%Y-%m-%d")
@@ -261,12 +274,20 @@ else:
         # ==================== 第二節：AI 盲測驗證成績單與量化指標 ====================
         st.markdown(f'<div class="section-banner">📊 第二節：AI 灰箱混合模型盲測試驗證成績單（測試集樣本數：{len(df_test):,} 小時）</div>', unsafe_allow_html=True)
 
+        st.markdown("""
+        <div class="concept-guide-box">
+            <b>📖 成績單怎麼看？</b><br>
+            * **RMSE（均方根誤差，kW）**：代表模型預測值跟真實案場數據平均差了多少千瓦。<b>數字越小越好</b>。<br>
+            * **$R^2$（決定係數）**：代表模型對發電起伏的解釋能力。<b>越接近 1.0 代表模型越完美</b>。對比純物理與 AI 灰箱的 $R^2$，就能看出 AI 幫忙修正了多少盲區！
+        </div>
+        """, unsafe_allow_html=True)
+
         m_col1, m_col2, m_col3, m_col4 = st.columns(4, gap="medium")
         with m_col1:
             st.markdown(f"""
             <div class="bright-card">
-                <div class="bright-title">📉 純物理模型 RMSE (均方根誤差)</div>
-                <div class="bright-val-orange">{rmse_physics:.2f} kW</div>
+                <div class="bright-title">📉 純物理模型 RMSE</div>
+                <div class="bright-val-orange">{rmse_physics:,.1f} kW</div>
                 <div class="bright-sub">未經 AI 修正之純物理理論基準誤差</div>
             </div>
             """, unsafe_allow_html=True)
@@ -274,22 +295,22 @@ else:
             st.markdown(f"""
             <div class="bright-card">
                 <div class="bright-title">🤖 AI 灰箱修正後 RMSE</div>
-                <div class="bright-val-green">{rmse_ai:.2f} kW <span style="font-size:0.85rem;color:#00E5FF;">(改善 {((rmse_physics-rmse_ai)/rmse_physics)*100:.1f}%)</span></div>
+                <div class="bright-val-green">{rmse_ai:,.1f} kW <span style="font-size:0.85rem;color:#00E5FF;">(改善 {((rmse_physics-rmse_ai)/rmse_physics)*100:.1f}%)</span></div>
                 <div class="bright-sub">經 Random Forest 殘差學習後之盲測誤差</div>
             </div>
             """, unsafe_allow_html=True)
         with m_col3:
             st.markdown(f"""
             <div class="bright-card">
-                <div class="bright-title">🎯 純物理模型 R² 決定係數</div>
+                <div class="bright-title">🎯 純物理模型 R²</div>
                 <div class="bright-val-cyan">{r2_physics:.4f}</div>
-                <div class="bright-sub">模型擬合優度 (1.0 代表完美擬合)</div>
+                <div class="bright-sub">模型擬合優度 (1.0 代表完美)</div>
             </div>
             """, unsafe_allow_html=True)
         with m_col4:
             st.markdown(f"""
             <div class="bright-card">
-                <div class="bright-title">🏆 AI 灰箱混合模型 R² 決定係數</div>
+                <div class="bright-title">🏆 AI 灰箱混合模型 R²</div>
                 <div class="bright-val-gold">{r2_ai:.4f} <span style="font-size:0.85rem;color:#00E676;">(顯著提升)</span></div>
                 <div class="bright-sub">灰箱架構盲測擬合優度</div>
             </div>
@@ -297,6 +318,15 @@ else:
 
         # ==================== 第三節：盲測驗證期功率同場對比圖 ====================
         st.markdown(f'<div class="section-banner">📈 第三節：盲測試驗證期（後 {100-int(train_ratio*100)}% 時序資料）功率同場對比圖</div>', unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="concept-guide-box">
+            <b>🔍 怎麼讀這張對比圖？（特別注意正午尖峰山頂）</b><br>
+            * **宏觀趨勢**：三條線（紅、藍、綠）在日夜循環上完全一致，證明物理模型沒有違反能量守恆。<br>
+            * **山頂細節（如何看出 AI 的價值）**：正午發電尖峰時，藍色（純物理）通常會稍微「凸在最上面」，因為它把面板當成永遠乾淨理想的狀態；而綠色（AI 灰箱）透過學習 PM2.5 與積塵殘差，主動幫物理模型把山頂「往下修」，精準貼合紅色（真實 SCADA 實測）。<br>
+            👉 <b>小技巧</b>：您可以直接用滑鼠在圖表上「框選（Box Select）」放大正午山頂，就能看清藍、綠、紅三條線在尖峰處的微小差異！
+        </div>
+        """, unsafe_allow_html=True)
 
         fig_eval = go.Figure()
         fig_eval.add_trace(go.Scatter(
