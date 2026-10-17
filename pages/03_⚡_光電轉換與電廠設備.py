@@ -8,7 +8,7 @@ st.set_page_config(page_title="第 3 章：光電轉換與電廠設備", page_ic
 # 緊湊化版面與高亮度發光數據卡 CSS（與第 1、2 章視覺風格 100% 統一）
 st.markdown("""
 <style>
-    .block-container { padding-top: 1.2rem !important; padding-bottom: 1rem !important; }
+   .block-container { padding-top: 3.5rem !important; padding-bottom: 1rem !important; }
     .bright-card {
         background: linear-gradient(145deg, #0F172A, #1E293B);
         border: 1px solid #475569;
