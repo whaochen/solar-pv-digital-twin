@@ -7,7 +7,7 @@ from datetime import datetime, date, timedelta
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# 嘗試引入機器學習套件 (scikit-learn / xgboost)
+# 嘗試引入機器學習套件 (scikit-learn)
 try:
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -69,7 +69,6 @@ TAIWAN_SOLAR_SITES = {
     "🇹🇼 5. 桃園觀音工業區屋頂型光電群 (25.04°N, 121.11°E)": {"short_name": "桃園觀音案場", "lat": 25.04, "lon": 121.11, "opt_tilt": 12.0, "capacity_kw": 50000.0}
 }
 
-# 內建物理與 AI 特徵工程計算引擎
 def process_physics_and_ai_features(df, lat_deg, panel_tilt_deg, rated_capacity_kw):
     phi_r = np.radians(lat_deg)
     beta_r = np.radians(panel_tilt_deg)
@@ -97,28 +96,21 @@ def process_physics_and_ai_features(df, lat_deg, panel_tilt_deg, rated_capacity_
     df["POA_Wm2"] = poa_wm2.round(1)
     df["Incidence_Angle_deg"] = np.where(sz > 0.0, theta_i_deg, 90.0).round(1)
 
-    # Faiman 面板溫度
     t_cell = df["T_amb_C"].values + df["POA_Wm2"].values / (25.0 + 6.84 * df["Wind_ms"].values)
     df["T_cell_C"] = np.round(t_cell, 1)
 
-    # 物理基準功率 P_physics (假設額定效率 21.5%，並考慮溫損系数 -0.4%/°C)
-    # 規模化為 kW 輸出
-    scale_factor = rated_capacity_kw / 1000.0 # 以 1000 kW 為基準縮放
+    scale_factor = rated_capacity_kw / 1000.0
     temp_factor = 1.0 - 0.004 * np.maximum(0.0, df["T_cell_C"].values - 25.0)
     p_physics = scale_factor * (df["POA_Wm2"].values / 1000.0) * 0.215 * temp_factor
     df["P_physics_kW"] = np.maximum(0.0, p_physics).round(2)
 
-    # 模擬真實案場實測發電量 P_actual (刻意加入 PM2.5 積塵衰減、短暫雲層擾動與隨機雜訊，作為 AI 要學習的目標)
     soiling_penalty = 1.0 - np.clip(df["PM25_ugm3"].values / 150.0 * 0.05 + (df["Dry_Hours_Since_Rain"].values / 200.0 * 0.04), 0.0, 0.12)
-    # 隨機微小動態擾動
     np.random.seed(42)
     noise = np.random.normal(1.0, 0.02, size=len(df))
     p_actual = df["P_physics_kW"].values * soiling_penalty * noise
     df["P_actual_kW"] = np.maximum(0.0, p_actual).round(2)
 
-    # 定義學術目標值：殘差 Residual = P_actual - P_physics
     df["Residual_kW"] = (df["P_actual_kW"] - df["P_physics_kW"]).round(2)
-
     return df
 
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -190,7 +182,6 @@ def fetch_and_prepare_ai_dataset(lat, lon, panel_tilt_deg, capacity_kw, start_st
             dry_hrs.append(cur_dry)
         df_merged["Dry_Hours_Since_Rain"] = dry_hrs
 
-        # 執行物理與 AI 特徵計算
         df_final = process_physics_and_ai_features(df_merged, lat, panel_tilt_deg, capacity_kw)
         return df_final, ""
     except Exception as e:
@@ -217,7 +208,6 @@ with s_col3:
     n_estimators = st.slider("🌲 樹木數量 (n_estimators)", 50, 300, 100, step=50)
     max_depth = st.slider("🌳 最大樹高 (max_depth)", 3, 10, 6, step=1)
 
-# 抓取自 2026-08-18 起算至今日的完整資料集
 start_str = "2026-08-18"
 end_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -226,14 +216,12 @@ df_data, err_msg = fetch_and_prepare_ai_dataset(lat_val, lon_val, panel_tilt_deg
 if err_msg or df_data.empty:
     st.error(f"❌ 資料管線讀取失敗：{err_msg}")
 else:
-    # 嚴格時序前後切分 (Time-Series Split，絕對不隨機抽樣以防 Data Leakage)
     n_total = len(df_data)
     n_train = int(n_total * train_ratio)
 
     df_train = df_data.iloc[:n_train].copy()
     df_test = df_data.iloc[n_train:].copy()
 
-    # 特徵清單 X 與目標值 y (殘差 Residual_kW)
     feature_cols = [
         "POA_Wm2", "Incidence_Angle_deg", "T_amb_C", "T_cell_C",
         "Wind_ms", "RH_pct", "PM25_ugm3", "Dry_Hours_Since_Rain"
@@ -244,7 +232,6 @@ else:
     X_test = df_test[feature_cols]
     y_test = df_test["Residual_kW"]
 
-    # 訓練隨機森林殘差模型
     if ML_AVAILABLE:
         rf_model = RandomForestRegressor(
             n_estimators=n_estimators,
@@ -254,15 +241,12 @@ else:
         )
         rf_model.fit(X_train, y_train)
 
-        # 預測殘差
         pred_train_residual = rf_model.predict(X_train)
         pred_test_residual = rf_model.predict(X_test)
 
-        # 最終 AI 修正後功率 = 物理基準功率 + 預測殘差
         df_train["P_ai_hybrid_kW"] = np.maximum(0.0, df_train["P_physics_kW"].values + pred_train_residual)
         df_test["P_ai_hybrid_kW"] = np.maximum(0.0, df_test["P_physics_kW"].values + pred_test_residual)
 
-        # 計算評估指標 (RMSE, MAE, R2)
         rmse_physics = np.sqrt(mean_squared_error(df_test["P_actual_kW"], df_test["P_physics_kW"]))
         mae_physics = mean_absolute_error(df_test["P_actual_kW"], df_test["P_physics_kW"])
         r2_physics = r2_score(df_test["P_actual_kW"], df_test["P_physics_kW"])
@@ -271,7 +255,6 @@ else:
         mae_ai = mean_absolute_error(df_test["P_actual_kW"], df_test["P_ai_hybrid_kW"])
         r2_ai = r2_score(df_test["P_actual_kW"], df_test["P_ai_hybrid_kW"])
 
-        # 特徵重要度
         importances = rf_model.feature_importances_
         feat_imp_df = pd.DataFrame({"Feature": feature_cols, "Importance": importances}).sort_values("Importance", ascending=True)
 
@@ -312,7 +295,7 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-        # ==================== 第三節：盲測驗證期功率同場對比圖 (實測 vs. 物理 vs. AI混合) ====================
+        # ==================== 第三節：盲測驗證期功率同場對比圖 ====================
         st.markdown(f'<div class="section-banner">📈 第三節：盲測試驗證期（後 {100-int(train_ratio*100)}% 時序資料）功率同場對比圖</div>', unsafe_allow_html=True)
 
         fig_eval = go.Figure()
@@ -371,10 +354,11 @@ else:
         with imp_col2:
             with st.container(border=True):
                 st.markdown("##### 🔬 AI 特徵重要度科學解讀")
+                site_name_str = site_info['short_name']
                 st.markdown(
-                    f"1. **POA 斜面輻照與 Faiman 溫度**：通常佔據特徵重要度的前兩名，代表熱力學溫升與有效光能量依然是主導發電量的一級變數。\n"
-                    f"2. **$\text{PM}_{2.5}$ 與連續無雨時數**：在 **{site_info['short_name']}** 的盲測中，這兩項微氣候特徵顯著貢獻了殘差學習，成功捕捉到乾季灰塵沉積與雨後洗塵的非線性衰減規律！\n"
-                    f"3. **學術價值**：這證明了灰箱架構成功結合了「物理模型的可解釋性」與「機器學習對在地微氣候的適應力」。"
+                    "1. **POA 斜面輻照與 Faiman 溫度**：通常佔據特徵重要度的前兩名，代表熱力學溫升與有效光能量依然是主導發電量的一級變數。\n"
+                    f"2. **$\\text{{PM}}_{{2.5}}$ 與連續無雨時數**：在 **{site_name_str}** 的盲測中，這兩項微氣候特徵顯著貢獻了殘差學習，成功捕捉到乾季灰塵沉積與雨後洗塵的非線性衰減規律！\n"
+                    "3. **學術價值**：這證明了灰箱架構成功結合了「物理模型的可解釋性」與「機器學習對在地微氣候的適應力」。"
                 )
 
     else:
