@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="第 3 章：光電轉換與電廠設備", page_icon="⚡", layout="wide")
 
-# 緊湊化版面與高亮度發光數據卡 CSS（與第 1、2 章視覺風格 100% 統一）
+# 修正 padding-top 為 3.5rem，確保頂部標題完整不裁切
 st.markdown("""
 <style>
-   .block-container { padding-top: 3.5rem !important; padding-bottom: 1rem !important; }
+    .block-container { padding-top: 3.5rem !important; padding-bottom: 1.5rem !important; }
     .bright-card {
         background: linear-gradient(145deg, #0F172A, #1E293B);
         border: 1px solid #475569;
@@ -81,7 +81,7 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
         tilt = np.radians(22.0)
         vx = [px_c - w, px_c + w, px_c + w, px_c - w]
         vy = [py_c - l*np.cos(tilt), py_c - l*np.cos(tilt), py_c + l*np.cos(tilt), py_c + l*np.cos(tilt)]
-        vz = [0.08, 0.08, 0.08 + 2*l*np.sin(tilt), 0.08 + 2*l*np.sin(tilt)]
+        vz = [0.08, 0.08, 0.08 + 2*l*np.sin(tilt), 0.08 + 2*panel_l*np.sin(tilt)] if False else [0.08, 0.08, 0.08 + 2*l*np.sin(tilt), 0.08 + 2*l*np.sin(tilt)]
         fig.add_trace(go.Mesh3d(
             x=vx, y=vy, z=vz, i=[0, 0], j=[1, 2], k=[2, 3],
             color='#2563EB', opacity=0.92,
@@ -210,7 +210,6 @@ def build_macro_plant_3d(irradiance, panel_eff, inv_eff, tx_eff):
             text=f"<b>🧍 案場工程師視角 ｜ ☀️光子({irradiance:.0f}kW) ➔ 🔵DC({p_dc:.1f}kW) ➔ 🟢AC({p_ac:.1f}kW) ➔ ⚡併網：{p_grid:.1f} kW</b>",
             font=dict(size=15, color="#FFD700"), x=0.02, y=0.96
         ),
-        # 高度精準設為 420px，與左側 2x2 緊湊控制台高度完全齊平，消除右下角白塊！
         height=420,
         margin=dict(l=0, r=0, b=10, t=50),
         paper_bgcolor='#0E1117',
@@ -384,7 +383,6 @@ with col_ctrl:
         )
 
     st.markdown("##### ☀️ 2. 調整日照與四大設備效率 (連動下方卡片)")
-    # 採用 2x2 雙欄緊湊排布，徹底消除單列過長與斷行問題！
     r1_c1, r1_c2 = st.columns(2)
     with r1_c1:
         irradiance = st.slider("☀️ 陽光強度 G (W/m²)", 200, 1000, 850, step=50)
@@ -410,7 +408,7 @@ with col_stage:
         fig_micro = build_micro_pn_junction_3d(irradiance, panel_eff)
         st.plotly_chart(fig_micro, use_container_width=True, key="micro_pn_stage")
 
-# ==================== 下半部：高亮度即時數據卡 ＋ 三大核心物理公式導讀（一體化同框連動） ====================
+# ==================== 中段：高亮度即時數據卡 ＋ 三大核心物理公式導讀（一體化同框連動） ====================
 total_sys_eff = (p_grid / max(irradiance, 1e-4)) * 100.0
 households = int(p_grid / 1.2)
 
@@ -454,3 +452,34 @@ with c_doc3:
         st.caption("**【③ 為什麼進電網前要升壓變壓器？】** 將電壓拉高 50 倍至 $22.8\\text{ kV}$，電流 $I$ 即縮小為 1/50，大幅消除長途電纜發熱損耗（$I^2 R$）：")
         st.latex(r"P_{\text{grid}} = \eta_{\text{tx}} \cdot P_{\text{AC}} = \sqrt{3}\,V_{\text{HV}}\,I_{\text{line}}\cos\phi - I_{\text{line}}^2 R")
         st.latex(rf"P_{{\text{{grid}}}} = \color{{limegreen}}{{{tx_eff:.1f}\%}} \times \color{{orange}}{{{p_ac:.1f}\text{{ kW}}}} = \color{{limegreen}}{{{p_grid:.1f}\text{{ kW}}}}")
+
+# ==================== 第三章專屬：學術基石、工程迷思與研究思辨專欄 ====================
+st.markdown("---")
+st.markdown("### ⚖️ 第三章學術思辨：光電轉換極限、串列木桶效應與容配比超配（Clipping）")
+b_col1, b_col2, b_col3 = st.columns(3, gap="medium")
+
+with b_col1:
+    with st.container(border=True):
+        st.markdown("##### 📜 1. 公式溯源與物理假設")
+        st.markdown(
+            "* **經典文獻出處**：單接面太陽能電池效率極限源自 **Shockley-Queisser Limit (1961)** 半導體熱力學推導（結晶矽理論極限約 $33.7\\%$，商用模組約 $21\\%\\sim 24\\%$）；系統性能與損耗鏈則依循 **IEC 61724** 國際標準。\n"
+            "* **成立前提假設**：本章線性乘法公式假設全廠每一片太陽能板受光完全均勻（無局部遮蔭），且逆變器在任何負載率下皆維持固定轉換效率。"
+        )
+
+with b_col2:
+    with st.container(border=True):
+        st.markdown("##### 🚨 2. 常見工程迷思與模型盲區")
+        st.markdown(
+            "* **迷思一：「100 片面板串聯，遮住 1 片只損失 1% 電力？」**\n"
+            "  * **真相（串聯木桶效應與熱斑 Hot Spot）**：串聯電路電流處處相等！只要 1 片面板被鳥屎或電線桿陰影遮住，該片電池會從發電機變成高電阻負載（局部飆破 $120^\\circ\\text{C}$ 形成**熱斑效應**），若旁路二極體（Bypass Diode）未即時導通，整串面板電流會一起崩跌！\n"
+            "* **迷思二：「100 kW 的太陽能板，就要配 100 kW 的逆變器？」**\n"
+            "  * **真相（容配比超配 DC/AC Ratio > 1.2）**：一年中陽光達到 $1,000\\text{ W/m}^2$ 的時數不到 $2\\%$。實務上常以 $130\\text{ kW}$ 面板搭配 $100\\text{ kW}$ 逆變器，寧可在正午發生**「削峰棄光（Clipping）」**，也能大幅提升早晚低光效率並節省台電饋線成本！"
+        )
+
+with b_col3:
+    with st.container(border=True):
+        st.markdown("##### 🧭 3. 可發展的研究方向與 Open Data")
+        st.markdown(
+            "* **智慧全域 MPPT 演算法**：局部遮蔭會使功率-電壓（P-V）曲線出現多個局部波峰，傳統擾動觀察法（P&O）極易卡在假波峰。可引入 **粒子群最佳化（PSO）或區間二型模糊控制（IT2 Fuzzy Control）** 進行全域最大功率追蹤研究。\n"
+            "* **結合公開電網與雙面模組資料**：介接美國 **NREL PVDAQ 公開實測資料庫** 或 **台電各區處饋線併網容量 Open Data**，研究雙面發電模組（Bifacial PV）在不同地表反照率（魚塭水面 vs. 鹽地）下的背面增益與逆變器削峰最佳化！"
+        )
