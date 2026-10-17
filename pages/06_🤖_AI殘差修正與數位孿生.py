@@ -53,7 +53,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🤖 第六章：【智慧賦能】灰箱混合架構：AI 機器學習殘差修正與盲測驗證工作台")
+st.markdown("### 第六章：【智慧賦能】灰箱混合架構：AI 機器學習殘差修正與盲測驗證工作台")
 st.info(
     "🌟 **【學術研究架構宣告】** 本章實作**「灰箱混合數位孿生（Grey-Box Hybrid Digital Twin）」**：\n"
     "1. **物理基準值 ($P_{\text{physics}}$)**：運用第 1～4 章物理引擎（斜面輻照 POA ➔ Faiman 溫度 ➔ 理想轉換效率）算出理論發電量。\n"
