@@ -269,7 +269,22 @@ else:
         r2_ai = r2_score(df_test["P_actual_kW"], df_test["P_ai_hybrid_kW"])
 
         importances = rf_model.feature_importances_
-        feat_imp_df = pd.DataFrame({"Feature": feature_cols, "Importance": importances}).sort_values("Importance", ascending=True)
+        
+        # 建立英文代號到中文直覺提示標籤的對應字典
+        feature_name_map = {
+            "POA_Wm2": "🎯 POA 面板斜面有效輻照度 (W/m²)",
+            "T_cell_C": "🔥 Faiman 面板工作溫度 (°C)",
+            "Dry_Hours_Since_Rain": "⏳ 連續無雨累積時數 (hr)",
+            "RH_pct": "💧 大氣相對濕度 (%)",
+            "PM25_ugm3": "🌫️ PM2.5 細懸浮微粒濃度 (μg/m³)",
+            "T_amb_C": "🌡️ 測站環境氣溫 Tamb (°C)",
+            "Wind_ms": "💨 案場風速 v (m/s)",
+            "Incidence_Angle_deg": "📐 太陽入射角 θi (°)"
+        }
+
+        feat_imp_df = pd.DataFrame({"Feature": feature_cols, "Importance": importances})
+        feat_imp_df["Feature_Label"] = feat_imp_df["Feature"].map(feature_name_map)
+        feat_imp_df = feat_imp_df.sort_values("Importance", ascending=True)
 
         # ==================== 第二節：AI 盲測驗證成績單與量化指標 ====================
         st.markdown(f'<div class="section-banner">📊 第二節：AI 灰箱混合模型盲測試驗證成績單（測試集樣本數：{len(df_test):,} 小時）</div>', unsafe_allow_html=True)
@@ -365,19 +380,21 @@ else:
 
         imp_col1, imp_col2 = st.columns([1.3, 1.0], gap="large")
         with imp_col1:
+            # 採用 Feature_Label (中文直覺提示) 取代原本冷冰冰的英代號
             fig_imp = go.Figure(go.Bar(
                 x=feat_imp_df["Importance"],
-                y=feat_imp_df["Feature"],
+                y=feat_imp_df["Feature_Label"],
                 orientation="h",
                 marker_color="#7C3AED",
                 opacity=0.85
             ))
             fig_imp.update_layout(
-                title=dict(text="<b>📊 隨機森林殘差模型特徵重要度排序</b>", font=dict(size=14, color="#0F172A")),
-                height=350,
+                title=dict(text="<b>📊 隨機森林殘差模型特徵重要度排序（微氣候貢獻分析）</b>", font=dict(size=14, color="#0F172A")),
+                height=380,
                 margin=dict(l=10, r=10, t=40, b=10),
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#F8FAFC",
-                xaxis=dict(gridcolor="#E2E8F0"), yaxis=dict(tickfont=dict(size=12))
+                xaxis=dict(gridcolor="#E2E8F0", title=dict(text="<b>相對重要度 (Feature Importance Score)</b>")),
+                yaxis=dict(tickfont=dict(size=11.5))
             )
             st.plotly_chart(fig_imp, use_container_width=True, key="feature_importance_chart")
 
@@ -387,7 +404,7 @@ else:
                 site_name_str = site_info['short_name']
                 st.markdown(
                     "1. **POA 斜面輻照與 Faiman 溫度**：通常佔據特徵重要度的前兩名，代表熱力學溫升與有效光能量依然是主導發電量的一級變數。\n"
-                    f"2. **$\\text{{PM}}_{{2.5}}$ 與連續無雨時數**：在 **{site_name_str}** 的盲測中，這兩項微氣候特徵顯著貢獻了殘差學習，成功捕捉到乾季灰塵沉積與雨後洗塵的非線性衰減規律！\n"
+                    f"2. **$\text{{PM}}_{{2.5}}$ 與連續無雨時數**：在 **{site_name_str}** 的盲測中，這兩項微氣候特徵顯著貢獻了殘差學習，成功捕捉到乾季灰塵沉積與雨後洗塵的非線性衰減規律！\n"
                     "3. **學術價值**：這證明了灰箱架構成功結合了「物理模型的可解釋性」與「機器學習對在地微氣候的適應力」。"
                 )
 
