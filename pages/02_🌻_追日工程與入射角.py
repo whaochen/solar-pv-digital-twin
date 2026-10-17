@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="第 2 章：大氣層與光線的捕捉", page_icon="🌻", layout="wide")
 
-# 緊湊化版面與高亮度數據卡 CSS
+# 修正 padding-top 為 3.5rem，確保頂部標題完整不裁切
 st.markdown("""
 <style>
-   .block-container { padding-top: 3.5rem !important; padding-bottom: 1rem !important; }
+    .block-container { padding-top: 3.5rem !important; padding-bottom: 1.5rem !important; }
     .bright-card {
         background: linear-gradient(145deg, #0F172A, #1E293B);
         border: 1px solid #475569;
@@ -409,7 +409,7 @@ with col_ctrl:
         )
     elif "光子第一人稱視角" in camera_mode:
         st.caption(
-            "🔥 **本章靈魂視角**：鏡頭架在太陽往下看三塊板子！**請將下方定格時間拉到「07:30」**："
+            "🔥 **本章靈魂視角**：鏡頭架在太陽往下看三塊板子！**請將下方定格時間選為「07:30」**："
             "你會看到🟦固定式變成窄窄一條線（面積剩 30%），而🟧雙軸呈現最飽滿正方形（面積 100%）！"
         )
     else:
@@ -446,16 +446,15 @@ with col_ctrl:
 
     st.markdown("##### 🔧 3. 面板傾角與定格時刻 (連動下方公式)")
     fixed_tilt_deg = st.slider("🟦 固定傾角 β (°)", 0.0, 45.0, 20.0, step=2.5)
-    
-    # 建立 06:00 到 18:00（間距 15 分鐘）的時間選項列表
+
     tracker_time_options = []
     for h in range(6, 19):
         for m in [0, 15, 30, 45]:
             if h == 18 and m > 0:
                 continue
             tracker_time_options.append(f"{h:02d}:{m:02d}")
-            
-    selected_t2_str = st.selectbox("⏰ 定格觀察時刻 (推薦 07:30 比較！)", tracker_time_options, index=6) # 預設 07:30
+
+    selected_t2_str = st.selectbox("⏰ 定格觀察時刻 (推薦 07:30 比較！)", tracker_time_options, index=6)
     th, tm = map(int, selected_t2_str.split(":"))
     hour_t = float(th) + float(tm) / 60.0
     phi_deg = 23.15
@@ -513,7 +512,7 @@ with f2:
     </div>
     """, unsafe_allow_html=True)
     with st.container(border=True):
-        st.caption("**【② 大氣層雙胞胎：DNI 直射 + DHI 散射】** 面板總輻照度 $G_{\\text{POA}}$ 為需要對準角度的直射光加上均勻散射光：")
+        st.caption("**【② Liu & Jordan (1960) 等向性斜面輻照公式】** 面板總輻照度 $G_{\\text{POA}}$ 為對準角度的直射光加上天空均勻散射光：")
         st.latex(r"G_{\text{POA}} = \text{DNI} \cdot \cos\theta_i + \text{DHI} \cdot \left(\frac{1 + \cos\beta}{2}\right)")
         st.latex(rf"G_{{\text{{POA,固定}}}} = \color{{gold}}{{{cur_dni:.0f}}}\times\color{{deepskyblue}}{{{cos_fix_now/100.0:.2f}}} + \color{{limegreen}}{{{cur_dhi:.0f}}}\times 0.97 = \color{{red}}{{{poa_fix_now:.0f}\text{{ W/m}}^2}}")
 
@@ -526,7 +525,7 @@ with f3:
     </div>
     """, unsafe_allow_html=True)
     with st.container(border=True):
-        st.caption("**【③ 為什麼追日能多榨出 25%~30% 電力？】** 把早晚斜射浪費的 $\\cos\\theta_i$ 扳正回 $100\\%$，讓發電曲線變成寬廣「胖鐘型」：")
+        st.caption("**【③ 為什麼追日能多榨出 25%~35% 電力？】** 把早晚斜射浪費的 $\\cos\\theta_i$ 扳正回 $100\\%$，讓發電曲線變成寬廣「胖鐘型」：")
         st.latex(r"\text{Gain}_{\%} = \frac{\int G_{\text{POA, Tracker}}\,dt - \int G_{\text{POA, Fixed}}\,dt}{\int G_{\text{POA, Fixed}}\,dt}")
         st.latex(rf"\text{{單軸增益}} = \color{{limegreen}}{{+{gain_1ax:.1f}\%}}, \quad \text{{雙軸增益}} = \color{{orange}}{{+{gain_2ax:.1f}\%}}")
 
@@ -541,14 +540,14 @@ with col_guide:
             "為什麼太陽能工程師稱追日系統為**「削峰填谷、拉寬肩膀」**的神器？請對照右側曲線觀察 **3 個關鍵時刻**：\n\n"
             "1. **🌅 早晨（06:30 ~ 10:00）與 🌇 傍晚（14:00 ~ 17:30）**：\n"
             "   * **🟦 固定式（藍線）** 因為面朝南方不動，早晚陽光從東、西兩側斜射擦過，曲線像「瘦高的山峰」，兩側肩膀嚴重凹陷。\n"
-            "   * **🟩 單軸（綠虛線）** 與 **🟧 雙軸（橘線）** 轉頭迎光，硬生生把早晚的曲線「撐起來」，多吃進大片**綠色與橘色陰影面積（多榨出 $+25\\% \\sim +40\\%$ 電能）**！\n"
+            "   * **🟩 單軸（綠虛線）** 與 **🟧 雙軸（橘線）** 轉頭迎光，硬生生把早晚的曲線「撐起來」，多吃進大片**綠色與橘色陰影面積**！\n"
             "2. **☀️ 正午 12:00 巔峰時刻**：\n"
             "   * 三條曲線在中午幾乎交會！代表正午陽光直射時，固定式表現並不輸追日系統。\n"
-            "3. **电网價值（傍晚尖峰供電）**：\n"
-            "   * 台灣電力系統最缺電的時刻是**下午 15:00 ~ 17:30（日落前冷氣負載仍高）**，追日系統在傍晚多發出的電力對穩定電網價值連城！"
+            "3. **⚡ 電網價值（傍晚尖峰供電）**：\n"
+            "   * 台灣電力系統最吃緊的時刻是**下午 15:00 ~ 17:30（日落前冷氣負載仍高）**，追日系統在傍晚多發出的電力對穩定電網極具價值！"
         )
         st.info(
-            f"🎯 **當前定格時刻（{int(hour_t):02d}:{int((hour_t%1)*60):02d}）即時比對**：\n"
+            f"🎯 **當前定格時刻（{selected_t2_str}）即時比對**：\n"
             f"* 🟦 固定式：**{poa_fix_now:.0f} W/m²**\n"
             f"* 🟩 單軸追日：**{poa_1ax_now:.0f} W/m²**（多拿 **+{poa_1ax_now - poa_fix_now:.0f} W/m²**）\n"
             f"* 🟧 雙軸追日：**{poa_2ax_now:.0f} W/m²**（多拿 **+{poa_2ax_now - poa_fix_now:.0f} W/m²**）"
@@ -557,7 +556,6 @@ with col_guide:
 with col_curve:
     fig_curve = go.Figure()
 
-    # 1. 固定式 (清透皇家藍填色)
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=fix_d[4], mode='lines',
         line=dict(color='#1D4ED8', width=3.5),
@@ -565,7 +563,6 @@ with col_curve:
         name=f'🟦 固定式 ({fixed_tilt_deg:.0f}° 傾角：{energy_fix:.2f} kWh/m²)'
     ))
 
-    # 2. 單軸追日 (鮮明翡翠綠虛線 + 增益面積填色)
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=ax1_d[4], mode='lines',
         line=dict(color='#059669', width=3.5, dash='dash'),
@@ -573,7 +570,6 @@ with col_curve:
         name=f'🟩 單軸追日 (+{gain_1ax:.1f}% 增益：{energy_1ax:.2f} kWh/m²)'
     ))
 
-    # 3. 雙軸追日 (高飽和琥珀橘實線 + 額外增益填色)
     fig_curve.add_trace(go.Scatter(
         x=t_day, y=ax2_d[4], mode='lines',
         line=dict(color='#D97706', width=4),
@@ -581,15 +577,13 @@ with col_curve:
         name=f'🟧 雙軸追日 (+{gain_2ax:.1f}% 增益：{energy_2ax:.2f} kWh/m²)'
     ))
 
-    # 標示當前選擇時刻的醒目垂直指標線
     fig_curve.add_vline(
         x=hour_t, line_width=2.5, line_dash="dot", line_color="#DC2626",
-        annotation_text=f"<b>⏰ 定格時刻 {int(hour_t):02d}:{int((hour_t%1)*60):02d}</b>",
+        annotation_text=f"<b>⏰ 定格時刻 {selected_t2_str}</b>",
         annotation_position="top left",
         annotation_font=dict(color="#DC2626", size=13)
     )
 
-    # 採用清爽高對比白底科研主題，徹底解決亮色模式黑字撞黑底與標題重疊問題！
     fig_curve.update_layout(
         title=dict(
             text="<b>📊 三種系統全日接收總輻照度 POA (W/m²) 同場對決</b>",
@@ -622,3 +616,34 @@ with col_curve:
         )
     )
     st.plotly_chart(fig_curve, use_container_width=True)
+
+# ==================== 第二章專屬：學術基石、工程迷思與研究思辨專欄 ====================
+st.markdown("---")
+st.markdown("### ⚖️ 第二章學術思辨：追日系統的產業迷思、散射光模型盲區與逆追日工程")
+b_col1, b_col2, b_col3 = st.columns(3, gap="medium")
+
+with b_col1:
+    with st.container(border=True):
+        st.markdown("##### 📜 1. 公式溯源與物理假設")
+        st.markdown(
+            "* **經典文獻出處**：大氣消光採用 **Kasten & Young (1989)** 大氣質量（Air Mass）模型；斜面天空散射比例 $\\frac{1+\\cos\\beta}{2}$ 則源自 **Liu & Jordan (1960)** 發表之**等向性天空散射模型（Isotropic Sky Model）**。\n"
+            "* **成立前提假設**：假設天空散射光從四面八方均勻落下，且忽略了當入射角 $\\theta_i > 60^\\circ$ 時，太陽能板鋼化玻璃表面急遽上升的**菲涅耳反射損失（Incidence Angle Modifier, IAM）**。"
+        )
+
+with b_col2:
+    with st.container(border=True):
+        st.markdown("##### 🚨 2. 常見工程迷思與模型盲區")
+        st.markdown(
+            "* **迷思一：「雙軸追日多發 30% 的電，為何台灣大型電廠幾乎不用？」**\n"
+            "  * **真相（颱風風險與土地 GCR 盲區）**：(1) 台灣位於強颱走廊，雙軸精密傳動機構遇 15 級陣風極易損毀且維運（O&M）昂貴；(2) 追日器為避免彼此擋光，陣列間距必須拉得很開（土地佔用率 GCR 極低）。在台灣高昂土地租金下，**同面積土地鋪滿固定式面板的總發電量與投資報酬率（IRR）反而高於雙軸追日**！\n"
+            "* **迷思二：「早晚追日面板傾角轉到最大（60°）發電量最高？」**\n"
+            "  * **真相（前排遮後排災難）**：清晨太陽貼近地平線時，若前排面板立起 $60^\\circ$，其長影會 **100% 遮蔽後排面板**導致電流崩潰！實務上必須採用**「逆追日（Backtracking）」**——太陽越低，面板反而要故意放平以躲避互遮。"
+        )
+
+with b_col3:
+    with st.container(border=True):
+        st.markdown("##### 🧭 3. 可發展的研究方向與 Open Data")
+        st.markdown(
+            "* **升級非等向性散射模型**：台灣西部常有薄雲與霾害，太陽周圍存在極亮的**環日輻射（Circumsolar）**。研究上可將 Liu & Jordan 模型升級為 **Perez (1990) Anisotropic Sky Model**，減少對傾斜面散射光的低估。\n"
+            "* **結合衛星雲圖與颱風預報 Open Data**：介接 **日本向日葵 9 號衛星逐 10 分鐘 DNI/DHI 反演資料** 與 **中央氣象署（CWA）強陣風警報 API**，研發「陰天自動放平吃散射光（Diffuse Optimization）」與「颱風前自動水平鎖固避險（Stow Mode）」智慧控制演算法！"
+        )
