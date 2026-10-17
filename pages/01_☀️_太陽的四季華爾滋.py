@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="第 1 章：太陽的四季華爾滋", page_icon="☀️", layout="wide")
 
-# 緊湊化版面與高亮度數據卡 CSS
+# 修正 padding-top 為 3.5rem，確保頂部標題完整不裁切，並維持高亮度發光數據卡
 st.markdown("""
 <style>
-   .block-container { padding-top: 3.5rem !important; padding-bottom: 1rem !important; }
+    .block-container { padding-top: 3.5rem !important; padding-bottom: 1.5rem !important; }
     .bright-card {
         background: linear-gradient(145deg, #0F172A, #1E293B);
         border: 1px solid #475569;
@@ -45,7 +45,7 @@ def calc_sun_position(n_day, hours_array, phi_deg):
     phi_r = np.radians(phi_deg)
     d_deg = 23.45 * np.sin(np.radians((360.0 / 365.0) * (284 + n_day)))
     d_rad = np.radians(d_deg)
-    
+
     cos_ws = -np.tan(phi_r) * np.tan(d_rad)
     if cos_ws <= -1.0:
         ws_deg = 180.0
@@ -53,7 +53,7 @@ def calc_sun_position(n_day, hours_array, phi_deg):
         ws_deg = 0.0
     else:
         ws_deg = float(np.degrees(np.arccos(cos_ws)))
-        
+
     daylight_hr = (2.0 / 15.0) * ws_deg
     sunrise = 12.0 - daylight_hr / 2.0
     sunset = 12.0 + daylight_hr / 2.0
@@ -377,11 +377,11 @@ with col_ctrl:
             if h == 19 and m > 15:
                 continue
             time_options.append(f"{h:02d}:{m:02d}")
-            
+
     selected_time_str = st.selectbox("選擇或拉動觀察時刻", time_options, index=22)
     sh, sm = map(int, selected_time_str.split(":"))
     hour_t = float(sh) + float(sm) / 60.0
-    
+
     compare_seasons = st.checkbox("🌈 三季軌道", value=True)
 
 with col_stage:
@@ -390,7 +390,7 @@ with col_stage:
     )
     st.plotly_chart(fig, use_container_width=True, key="celestial_3d_stage")
 
-# ==================== 下半部：高亮度即時數據卡 ＋ 物理公式導讀（正下方一體化連動） ====================
+# ==================== 中段：高亮度即時數據卡 ＋ 物理公式導讀（正下方一體化連動） ====================
 sunrise_str = f"{int(sunrise):02d}:{int((sunrise%1)*60):02d}"
 sunset_str = f"{int(sunset):02d}:{int((sunset%1)*60):02d}"
 omega_now = 15.0 * (hour_t - 12.0)
@@ -406,7 +406,7 @@ with f_col1:
     </div>
     """, unsafe_allow_html=True)
     with st.container(border=True):
-        st.caption("**【公式導讀】** 拉動上方 **「📅 第 n 天」**，觀察赤緯角 $\\delta$ 在 $\\pm 23.45^\\circ$ 間跳動：")
+        st.caption("**【公式導讀：Cooper (1969) 赤緯角方程式】** 拉動上方 **「📅 第 n 天」**，觀察赤緯角 $\\delta$ 在 $\\pm 23.45^\\circ$ 間跳動：")
         st.latex(r"\delta = 23.45^\circ \times \sin\left[\frac{360^\circ}{365} \times (284 + n)\right]")
         st.latex(rf"\text{{代入 }} n=\color{{orange}}{{{day_n}}} \implies \delta = \color{{red}}{{{delta_deg:+.2f}^\circ}}")
 
@@ -419,7 +419,7 @@ with f_col2:
     </div>
     """, unsafe_allow_html=True)
     with st.container(border=True):
-        st.caption("**【公式導讀】** 拉動上方 **「🧭 緯度 φ」**，觀察高緯度如何放大冬夏白晝差距：")
+        st.caption("**【公式導讀：球面三角日落時角公式】** 拉動上方 **「🧭 緯度 φ」**，觀察高緯度如何放大冬夏白晝差距：")
         st.latex(r"\omega_s = \arccos(-\tan\phi \cdot \tan\delta), \quad N = \frac{2\omega_s}{15^\circ}")
         st.latex(rf"\phi=\color{{orange}}{{{phi_deg:.1f}^\circ}}, \delta=\color{{red}}{{{delta_deg:+.1f}^\circ}} \implies \omega_s = \color{{deepskyblue}}{{{ws_deg:.1f}^\circ}} \implies N = \color{{limegreen}}{{{daylight_hr:.2f}\text{{ hr}}}}")
 
@@ -428,10 +428,41 @@ with f_col3:
     <div class="bright-card">
         <div class="bright-title">☀️ ③ 定格時刻太陽仰角 (αs) 與水平受光率</div>
         <div class="bright-val-cyan">{alpha_s_deg:.1f}° <span style="font-size:1rem;color:#FFD700;font-weight:600;">｜ 地面受光率 {max(0.0, cur_z)*100:.1f}%</span></div>
-        <div class="bright-sub">當前時刻 {int(hour_t):02d}:{int((hour_t%1)*60):02d} (時角 ω = {omega_now:+.1f}°)</div>
+        <div class="bright-sub">當前時刻 {selected_time_str} (時角 ω = {omega_now:+.1f}°)</div>
     </div>
     """, unsafe_allow_html=True)
     with st.container(border=True):
-        st.caption("**【公式導讀】** 拉動上方 **「⏰ 定格時刻 t」**，觀察太陽仰角如何決定受光密度：")
+        st.caption("**【公式導讀：天球高度角餘弦定理】** 拉動上方 **「⏰ 定格時刻」**，觀察太陽仰角如何決定受光密度：")
         st.latex(r"\sin\alpha_s = \sin\phi\sin\delta + \cos\phi\cos\delta\cos\omega")
         st.latex(rf"\text{{時角 }}\omega = \color{{orange}}{{{omega_now:+.1f}^\circ}} \implies \alpha_s = \color{{deepskyblue}}{{{alpha_s_deg:.1f}^\circ}}")
+
+# ==================== 第一章專屬：學術基石、工程迷思與研究思辨專欄 ====================
+st.markdown("---")
+st.markdown("### ⚖️ 第一章學術思辨：天文幾何公式的理論基石、常見迷思與模型盲區")
+b_col1, b_col2, b_col3 = st.columns(3, gap="medium")
+
+with b_col1:
+    with st.container(border=True):
+        st.markdown("##### 📜 1. 公式溯源與物理假設")
+        st.markdown(
+            "* **經典文獻出處**：本章赤緯角公式源自 **P. I. Cooper (1969)** 發表於 *Solar Energy* 之正弦近似式，球面三角高度角推導則依循太陽能工程經典 **Duffie & Beckman《Solar Engineering of Thermal Processes》**。\n"
+            "* **成立前提假設**：假設地球公轉軌道為**「完美正圓形（等角速度公轉）」**，且將太陽視為無體積之幾何點光源，赤緯角估算誤差約在 $\\pm 1.5^\\circ$ 以內，適用於初步日照資源評估。"
+        )
+
+with b_col2:
+    with st.container(border=True):
+        st.markdown("##### 🚨 2. 常見工程迷思與模型盲區")
+        st.markdown(
+            "* **迷思一：「手錶正午 12:00 太陽一定在正南方最高點？」**\n"
+            "  * **真相（均時差盲區）**：地球真實公轉軌道是橢圓形（克卜勒第二定律：近日點快、遠日點慢），導致「真太陽時」與「手錶標準時」存在 **$-14$ 至 $+16$ 分鐘的均時差（Equation of Time, EoT）** 與經度時差！\n"
+            "* **迷思二：「公式算出的日出日落，就是電廠開始發電的時間？」**\n"
+            "  * **真相（折射與天際線遮蔽）**：公式忽略了大氣層對陽光造成的 **$0.57^\\circ$ 大氣折射**，更忽略了真實案場周遭的**遠山、防風林、鄰棟建築與前排模組遮蔭（Horizon & Row Shading）**，早晚至少有 $45\\sim 90$ 分鐘無法有效發電。"
+        )
+
+with b_col3:
+    with st.container(border=True):
+        st.markdown("##### 🧭 3. 可發展的研究方向與 Open Data")
+        st.markdown(
+            "* **高精度演算法升級**：在需要極高對準精度的聚光型光電（CPV）或雙軸追日研究中，可將 Cooper 近似式升級為美國國家再生能源實驗室 **NREL SPA（Solar Position Algorithm，Reda & Andreas, 2004）**，考慮月球攝動與大氣折射，將誤差壓低至 $\\pm 0.0003^\\circ$。\n"
+            "* **結合政府空間地形 Open Data**：可介接**內政部國土測繪中心「全台灣 20m 網格數值高程模型（DEM）與數值地表模型（DSM）」**，計算案場 $360^\\circ$ 真實天際線遮蔽仰角輪廓（Horizon Profile），精準扣除山稜線與建物陰影損失！"
+        )
