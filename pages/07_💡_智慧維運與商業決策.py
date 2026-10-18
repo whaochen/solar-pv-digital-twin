@@ -3,9 +3,8 @@ import pandas as pd
 import numpy as np
 import urllib.request
 import json
-from datetime import datetime, date, timedelta
+from datetime import datetime
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 try:
     from sklearn.ensemble import RandomForestRegressor
@@ -35,7 +34,7 @@ st.markdown("""
     }
     .bright-val-green { color: #00E676 !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
     .bright-val-cyan { color: #00E5FF !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
-    .bright-val-gold { color: #FFD700 !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
+    .bright-val-orange { color: #FB923C !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
     .bright-val-red { color: #FF5252 !important; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }
     .bright-sub { color: #94A3B8 !important; font-size: 0.83rem; margin-top: 4px; }
     .section-banner {
@@ -65,10 +64,10 @@ st.markdown("""
 
 st.markdown("### 第七章：【商業落地】智慧維運與經濟決策模組（Smart O&M & Economic Optimization）")
 st.info(
-    "🌟 **【第七章核心價值】** 前面 6 章我們證明了 AI 的預測準確度。本章進一步回答業主最關心的三個商業靈魂拷問：\n"
-    "1. **實測比預期低時，到底是面板髒了（環境正常積塵），還是硬體壞了（設備故障）？**（智慧故障診斷雷達）\n"
-    "2. **累積了多少灰塵損失？何時花錢請水車來洗面板最划算？**（最佳清洗排程經濟學）\n"
-    "3. **使用 AI 灰箱模型幫電廠躲掉了多少台電發電偏差罰款？**（電網偏差風險評估）"
+    "🌟 **【第七章核心價值】** 回答業主最關心的三個商業靈魂拷問：\n"
+    "1. 實測比預期低時，到底是面板髒了（環境正常積塵），還是硬體壞了（設備故障）？\n"
+    "2. 累積了多少灰塵損失？何時花錢請水車來洗面板最划算？\n"
+    "3. 使用 AI 灰箱模型幫電廠躲掉了多少台電發電偏差罰款？"
 )
 
 TAIWAN_SOLAR_SITES = {
@@ -219,7 +218,7 @@ with om_c2:
 
 with om_c3:
     cleaning_cost = st.number_input("🚿 全廠人工/水車清洗成本 (萬元)", value=12.0, step=1.0)
-    st.caption("💡 用於計算『累積發電損失金額』何時超越清洗成本，決定最佳清洗時機！")
+    st.caption("💡 用於計算清洗時機！")
 
 df_om, om_err = fetch_and_prepare_om_dataset(lat_val, lon_val, panel_tilt_deg, capacity_kw)
 
@@ -232,7 +231,6 @@ else:
     ]
     n_train = int(len(df_om) * 0.8)
     df_t_train = df_om.iloc[:n_train]
-    df_t_test = df_om.iloc[n_train:]
 
     if ML_AVAILABLE:
         rf_om = RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42, n_jobs=-1)
@@ -244,14 +242,6 @@ else:
         df_om["P_ai_hybrid_kW"] = df_om["P_physics_kW"]
 
     st.markdown('<div class="section-banner">🚨 第二節：智慧故障診斷雷達（自動過濾「環境積塵」與「真實硬體故障」）</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="concept-guide-box">
-        <b>💡 工程師的痛點與 AI 的解法：</b><br>
-        * <b>傳統監控（沒有 AI）</b>：只看實測值比物理公式低就發警報，結果常因「面板積塵」造成假警報（狼來了），工程師麻木後真正故障反而漏接。<br>
-        * <b>智慧雷達（有 AI 灰箱）</b>：AI 結合 PM2.5 與無雨時數算出這是「正常積塵損耗」，自動過濾假警報；唯有在降雨後排除積塵、實測值仍異常偏低時，才發出<b>紅色真實硬體故障警報</b>！
-    </div>
-    """, unsafe_allow_html=True)
 
     df_daytime = df_om[df_om["POA_Wm2"] > 50.0].copy()
     latest_row = df_daytime.iloc[-1] if not df_daytime.empty else df_om.iloc[-1]
@@ -273,9 +263,9 @@ else:
             <div class="bright-title">📡 當前案場即時發電狀態診斷 ({latest_row['timestamp'].strftime('%Y-%m-%d %H:%M')})</div>
             <div class="bright-val-cyan">實測功率：{act_p:,.1f} kW</div>
             <div class="bright-sub">
-                ☀️ 物理理論預期：<b>{phys_p:,.1f} kW</b> (落差 {(diff_from_physics/max(phys_p,1))*100:+.1f}%)<br>
-                🤖 AI 灰箱修正預期：<b>{ai_p:,.1f} kW</b> (落差 {(diff_from_ai/max(ai_p,1))*100:+.1f}%)<br>
-                🌫️ 當前環境狀態：<b>PM2.5 = {pm25_val:.1f} μg/m³ ｜ 連續無雨 = {int(dry_hr)} 小時</b>
+                ☀️ 物理理論預期：<b>{phys_p:,.1f} kW</b><br>
+                🤖 AI 灰箱修正預期：<b>{ai_p:,.1f} kW</b><br>
+                🌫️ 當前環境狀態：<b>PM2.5 = {pm25_val:.1f} ｜ 連續無雨 = {int(dry_hr)} 小時</b>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -286,17 +276,17 @@ else:
             if abs(diff_from_ai) <= 0.08 * ai_p:
                 st.success(
                     "🟢 **【狀態判定：系統健康，環境正常積塵】**\n"
-                    f"雖然發電量比純物理預期低了 `{abs(diff_from_physics):.1f} kW`，但 AI 判定此落差完全符合當前 `{int(dry_hr)}` 小時無雨與 `{pm25_val:.1f}` 的 PM2.5 積塵規律。**【不須派工維修，無須清洗】**。"
+                    f"AI 判定發電落差符合當前 `{int(dry_hr)}` 小時無雨與 `{pm25_val:.1f}` PM2.5 規律。**【不須派工維修】**。"
                 )
             elif diff_from_ai < -0.08 * ai_p:
                 st.error(
                     "🚨 **【二級警報：偵測到非典型功率異常偏低！】**\n"
-                    f"已排除 PM2.5 與積塵因素，實測值仍比 AI 預期低了 `{abs(diff_from_ai):.1f} kW`。**【強烈懷疑局部串列短路或逆變器 MPPT 異常，請立即派工檢修！】**"
+                    f"已排除積塵因素，實測值仍異常偏低。**【強烈懷疑硬體故障，請立即派工檢修！】**"
                 )
             else:
-                st.info("🔵 **【狀態判定：發電表現超乎預期（微氣候風速偏低或散射光增強）】**")
+                st.info("🔵 **【狀態判定：發電表現超乎預期】**")
 
-    st.markdown('<div class="section-banner">💧 第三節：最佳面板清洗排程與積塵經濟損失計算器（何時洗面板最划算？）</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-banner">💧 第三節：最佳面板清洗排程與積塵經濟損失計算器</div>', unsafe_allow_html=True)
 
     loss_kwh_list = []
     accum_loss = 0.0
@@ -319,35 +309,35 @@ else:
     with eco_col1:
         st.markdown(f"""
         <div class="bright-card">
-            <div class="bright-title">💰 目前累積積塵發電損失金額</div>
+            <div class="bright-title">💰 目前累積積塵發電損失</div>
             <div class="bright-val-orange">NT$ {total_current_loss_ntd:,.0f}</div>
-            <div class="bright-sub">自上次雨後累積至今因灰塵少發之電費</div>
+            <div class="bright-sub">自上次雨後因灰塵少發之電費</div>
         </div>
         """, unsafe_allow_html=True)
     with eco_col2:
         st.markdown(f"""
         <div class="bright-card">
-            <div class="bright-title">🚿 全廠水車清洗預算成本</div>
+            <div class="bright-title">🚿 水車清洗預算成本</div>
             <div class="bright-val-cyan">NT$ {cleaning_cost_ntd:,.0f}</div>
-            <div class="bright-sub">外包清洗團隊與人工總報價</div>
+            <div class="bright-sub">外包清洗團隊總報價</div>
         </div>
         """, unsafe_allow_html=True)
     with eco_col3:
         if is_time_to_clean:
             st.markdown(f"""
             <div class="bright-card">
-                <div class="bright-title">🚀 O&M 清洗決策建議</div>
+                <div class="bright-title">🚀 O&M 決策建議</div>
                 <div class="bright-val-red">【建議立即安排清洗】</div>
-                <div class="bright-sub">累積損失已超過清洗成本，此時洗面板淨利潤最高！</div>
+                <div class="bright-sub">累積損失已超過清洗成本！</div>
             </div>
             """, unsafe_allow_html=True)
         else:
             diff_ntd = cleaning_cost_ntd - total_current_loss_ntd
             st.markdown(f"""
             <div class="bright-card">
-                <div class="bright-title">⏳ O&M 清洗決策建議</div>
+                <div class="bright-title">⏳ O&M 決策建議</div>
                 <div class="bright-val-green">【暫不須清洗 (再累積 NT$ {diff_ntd:,.0f})】</div>
-                <div class="bright-sub">目前損失小於清洗費，建議等下一場雨或繼續累積</div>
+                <div class="bright-sub">目前損失小於清洗費</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -360,7 +350,7 @@ else:
     ))
     fig_loss.add_hline(
         y=cleaning_cost_ntd, line_width=2.5, line_dash="dash", line_color="#DC2626",
-        annotation_text=f"<b>🚿 清洗成本線 (NT$ {cleaning_cost_ntd:,.0f}) ➔ 交叉點即為最佳清洗日！</b>",
+        annotation_text=f"<b>🚿 清洗成本線 (NT$ {cleaning_cost_ntd:,.0f})</b>",
         annotation_position="top left",
         annotation_font=dict(color="#DC2626", size=12)
     )
@@ -369,18 +359,17 @@ else:
         height=380,
         margin=dict(l=65, r=25, t=75, b=40),
         paper_bgcolor="#FFFFFF", plot_bgcolor="#F8FAFC",
-        xaxis=dict(gridcolor="#E2E8F0"), yaxis=dict(title=dict(text="<b>累積發電損失金額 (新台幣 NTD)</b>", font=dict(color="#0F172A", size=12)), gridcolor="#E2E8F0")
+        xaxis=dict(gridcolor="#E2E8F0"), yaxis=dict(title=dict(text="<b>累積發電損失金額 (NTD)</b>", font=dict(color="#0F172A", size=12)), gridcolor="#E2E8F0")
     )
     st.plotly_chart(fig_loss, use_container_width=True, key="cleaning_eco_chart")
 
     st.markdown('<div class="section-banner">📊 第四節：台電發電偏差罰款風險評估與 AI 商業價值總結</div>', unsafe_allow_html=True)
-
     st.markdown("""
     <div class="concept-guide-box">
         <b>🏆 結論：為什麼這套「物理 + AI 灰箱數位孿生」無懈可擊？</b><br>
-        1. <b>學術面</b>：我們結合了第 1～4 章第一性原理物理公式，確保模型永遠不會違反能量守恆。<br>
-        2. <b>工程面</b>：我們透過第 5 章串接了真實世界每天更新的 Open Data，並用第 6 章的 AI 抓出積塵與微氣候殘差。<br>
-        3. <b>商業面（第七章）</b>：我們幫電廠老闆省下了不必要的假警報巡檢成本，精準計算出水車清洗的最佳經濟時機，並大幅降低台電發電預測偏差的罰款風險！這就是智慧能源數位孿生的最高價值所在。
+        1. <b>學術面</b>：結合第一性原理物理公式，模型絕不違反能量守恆。<br>
+        2. <b>工程面</b>：串接即時 Open Data 與 AI 殘差修正，精準捕捉在地微氣候。<br>
+        3. <b>商業面（第七章）</b>：省下不必要巡檢成本、計算水車清洗最佳時機，降低電網偏差罰款風險！
     </div>
     """, unsafe_allow_html=True)
 
