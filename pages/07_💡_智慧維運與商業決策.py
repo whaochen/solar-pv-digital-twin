@@ -231,7 +231,6 @@ df_om, om_err = fetch_and_prepare_om_dataset(lat_val, lon_val, panel_tilt_deg, c
 if om_err or df_om.empty:
     st.error(f"❌ 數據載入失敗：{om_err}")
 else:
-    # 訓練隨機森林並進行全量預測
     feature_cols = [
         "POA_Wm2", "Incidence_Angle_deg", "T_amb_C", "T_cell_C",
         "Wind_ms", "RH_pct", "PM25_ugm3", "Dry_Hours_Since_Rain"
@@ -260,8 +259,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # 取最近一筆白晝發電紀錄進行診斷
-    df_daytime = df_om[df_om["POA_Wm2 >"] > 50.0] if "POA_Wm2 >" in df_om else df_om[df_om["POA_Wm2"] > 50.0]
+    df_daytime = df_om[df_om["POA_Wm2"] > 50.0].copy()
     latest_row = df_daytime.iloc[-1] if not df_daytime.empty else df_om.iloc[-1]
 
     act_p = latest_row["P_actual_kW"]
@@ -270,7 +268,6 @@ else:
     pm25_val = latest_row["PM25_ugm3"]
     dry_hr = latest_row["Dry_Hours_Since_Rain"]
 
-    # 模擬診斷邏輯
     diff_from_physics = act_p - phys_p
     diff_from_ai = act_p - ai_p
 
@@ -308,23 +305,21 @@ else:
     # ==================== 第三節：最佳清洗排程與累積損失金額計算 ====================
     st.markdown('<div class="section-banner">💧 第三節：最佳面板清洗排程與積塵經濟損失計算器（何時洗面板最划算？）</div>', unsafe_allow_html=True)
 
-    # 計算自上次降雨以來因為積塵累積損失的總度數與總金額
-    # 當 Rain >= 0.2 mm 時累積損失歸零，否則將每日殘差缺口換算為發電損失
     loss_kwh_list = []
     accum_loss = 0.0
     for r_val, res_val in zip(df_om["Rain_mm"], df_om["Residual_kW"]):
         if r_val >= 0.2:
-            accum_loss = 0.0  # 雨後歸零
+            accum_loss = 0.0
         else:
             if res_val < 0:
-                accum_loss += abs(res_val) * 1.0  # 1小時的 kWh 損失
+                accum_loss += abs(res_val) * 1.0
         loss_kwh_list.append(accum_loss)
 
     df_om["Accumulated_Loss_kWh"] = loss_kwh_list
     df_om["Accumulated_Loss_NTD"] = df_om["Accumulated_Loss_kWh"] * electricity_price
 
     total_current_loss_ntd = float(df_om["Accumulated_Loss_NTD"].iloc[-1])
-    cleaning_cost_ntd = cleaning_cost * 10000.0  # 萬元轉元
+    cleaning_cost_ntd = cleaning_cost * 10000.0
     is_time_to_clean = total_current_loss_ntd >= cleaning_cost_ntd
 
     eco_col1, eco_col2, eco_col3 = st.columns(3, gap="medium")
@@ -363,7 +358,6 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-    # 繪製累積損失金額趨勢圖
     fig_loss = go.Figure()
     fig_loss.add_trace(go.Scatter(
         x=df_om["timestamp"], y=df_om["Accumulated_Loss_NTD"], mode="lines",
