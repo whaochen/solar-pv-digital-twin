@@ -7,7 +7,6 @@ from datetime import datetime, date, timedelta
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# 嘗試引入 scikit-learn
 try:
     from sklearn.ensemble import RandomForestRegressor
     ML_AVAILABLE = True
@@ -64,7 +63,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==================== 頂部：標題與導讀 ====================
 st.markdown("### 第七章：【商業落地】智慧維運與經濟決策模組（Smart O&M & Economic Optimization）")
 st.info(
     "🌟 **【第七章核心價值】** 前面 6 章我們證明了 AI 的預測準確度。本章進一步回答業主最關心的三個商業靈魂拷問：\n"
@@ -81,7 +79,6 @@ TAIWAN_SOLAR_SITES = {
     "🇹🇼 5. 桃園觀音工業區屋頂型光電群 (25.04°N, 121.11°E)": {"short_name": "桃園觀音案場", "lat": 25.04, "lon": 121.11, "opt_tilt": 12.0, "capacity_kw": 50000.0}
 }
 
-# 資料管線與 AI 訓練復用函數
 def process_physics_and_ai_features(df, lat_deg, panel_tilt_deg, rated_capacity_kw):
     phi_r = np.radians(lat_deg)
     beta_r = np.radians(panel_tilt_deg)
@@ -135,7 +132,7 @@ def fetch_and_prepare_om_dataset(lat, lon, panel_tilt_deg, capacity_kw):
     start_str = "2026-08-18"
     end_str = datetime.now().strftime("%Y-%m-%d")
     weather_url = (
-        f"https://api.open-meteo.com/v1/forecast?"
+        f"[https://api.open-meteo.com/v1/forecast](https://api.open-meteo.com/v1/forecast)?"
         f"latitude={lat}&longitude={lon}"
         f"&start_date={start_str}&end_date={end_str}"
         f"&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,"
@@ -143,7 +140,7 @@ def fetch_and_prepare_om_dataset(lat, lon, panel_tilt_deg, capacity_kw):
         f"&wind_speed_unit=ms&timezone=Asia%2FTaipei"
     )
     air_url = (
-        f"https://air-quality-api.open-meteo.com/v1/air-quality?"
+        f"[https://air-quality-api.open-meteo.com/v1/air-quality](https://air-quality-api.open-meteo.com/v1/air-quality)?"
         f"latitude={lat}&longitude={lon}"
         f"&start_date={start_str}&end_date={end_str}"
         f"&hourly=pm10,pm2_5"
@@ -206,8 +203,6 @@ def fetch_and_prepare_om_dataset(lat, lon, panel_tilt_deg, capacity_kw):
     except Exception as e:
         return pd.DataFrame(), str(e)
 
-
-# ==================== 第一節：案場選擇與決策參數設定 ====================
 st.markdown('<div class="section-banner">📍 第一節：選擇台灣光電案場與商用 O&M 經濟參數設定</div>', unsafe_allow_html=True)
 
 om_c1, om_c2, om_c3 = st.columns([1.2, 1.0, 1.0], gap="medium")
@@ -248,7 +243,6 @@ else:
     else:
         df_om["P_ai_hybrid_kW"] = df_om["P_physics_kW"]
 
-    # ==================== 第二節：智慧故障診斷與「狼來了」過濾雷達 ====================
     st.markdown('<div class="section-banner">🚨 第二節：智慧故障診斷雷達（自動過濾「環境積塵」與「真實硬體故障」）</div>', unsafe_allow_html=True)
 
     st.markdown("""
@@ -302,7 +296,6 @@ else:
             else:
                 st.info("🔵 **【狀態判定：發電表現超乎預期（微氣候風速偏低或散射光增強）】**")
 
-    # ==================== 第三節：最佳清洗排程與累積損失金額計算 ====================
     st.markdown('<div class="section-banner">💧 第三節：最佳面板清洗排程與積塵經濟損失計算器（何時洗面板最划算？）</div>', unsafe_allow_html=True)
 
     loss_kwh_list = []
@@ -380,7 +373,6 @@ else:
     )
     st.plotly_chart(fig_loss, use_container_width=True, key="cleaning_eco_chart")
 
-    # ==================== 第四節：台電發電偏差風險與經濟效益總結 ====================
     st.markdown('<div class="section-banner">📊 第四節：台電發電偏差罰款風險評估與 AI 商業價值總結</div>', unsafe_allow_html=True)
 
     st.markdown("""
