@@ -412,7 +412,6 @@ else:
                 line=dict(color="#059669", width=2.8)
             ))
             y_title_str = "<b>發電輸出功率 (kW)</b>"
-            # 若為模式 A，直接將 Y 軸鎖定在山頂上半部 (50% ~ 105% Peak)，徹底放大山頂細節！
             if "模式 A" in eval_view_mode:
                 y_range_cfg = [max_p_test * 0.48, max_p_test * 1.04]
             else:
@@ -492,7 +491,6 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-        # 只取白晝有效發電時段 (POA > 20 W/m2)，讓 3D 關係圖飽滿清晰
         df_daylight = df_data[df_data["POA_Wm2"] > 20.0].copy()
 
         axis_options = {
@@ -525,13 +523,12 @@ else:
 
         fig_3d_rel = go.Figure()
 
-        # 若選擇預設的「入射角 x 面板溫度 x 實測發電量」，額外疊加一層半透明「3D 理論物理基準曲面網格」供立體對照！
+        # 若選擇預設的「入射角 x 面板溫度 x 實測發電量」，額外疊加一層半透明「3D 理論物理基準曲面網格」供立體對照
         if x_col == "Incidence_Angle_deg" and y_col == "T_cell_C" and z_col == "P_actual_kW":
             theta_grid = np.linspace(float(df_daylight["Incidence_Angle_deg"].min()), 80.0, 25)
             tcell_grid = np.linspace(float(df_daylight["T_cell_C"].min()), float(df_daylight["T_cell_C"].max()), 25)
             TH, TC = np.meshgrid(theta_grid, tcell_grid)
-            # 根據入射角估算典型晴天 POA 與理論物理功率曲面
-            poa_ ideal_mesh = 950.0 * np.cos(np.radians(np.clip(TH, 0.0, 85.0)))
+            poa_ideal_mesh = 950.0 * np.cos(np.radians(np.clip(TH, 0.0, 85.0)))
             scale_f = capacity_kw / 1000.0
             p_mesh = scale_f * (poa_ideal_mesh / 1000.0) * 0.215 * (1.0 - 0.004 * np.maximum(0.0, TC - 25.0))
 
